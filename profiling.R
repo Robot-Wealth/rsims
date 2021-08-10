@@ -41,11 +41,14 @@ commission_pct <- fees$fee[fees$tier==fee_tier]
 # simulation benchmarking and optimisation
 microbenchmark(
   cash_backtest(backtest_prices, backtest_theo_weights, trade_buffer, initial_cash, commission_pct, capitalise_profits),
-  times = 100
+  times = 10
 )
+# Unit: milliseconds
+#      min       lq     mean   median       uq      max  neval
+# 136.7269 142.2624 172.5471 150.1005 223.7039 247.2416     10
 
 profvis({
   cash_backtest(backtest_prices, backtest_theo_weights, trade_buffer, initial_cash, commission_pct, capitalise_profits)
-}, interval = 0.005)
+}, interval = 0.0075)
 
 

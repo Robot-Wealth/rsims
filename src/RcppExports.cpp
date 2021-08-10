@@ -6,8 +6,8 @@
 using namespace Rcpp;
 
 // positionsFromNoTradeBuffer
-NumericVector positionsFromNoTradeBuffer(NumericVector current_positions, NumericVector current_prices, NumericVector current_theo_weights, double cap_equity, int num_assets, double trade_buffer);
-RcppExport SEXP _rsims_positionsFromNoTradeBuffer(SEXP current_positionsSEXP, SEXP current_pricesSEXP, SEXP current_theo_weightsSEXP, SEXP cap_equitySEXP, SEXP num_assetsSEXP, SEXP trade_bufferSEXP) {
+NumericVector positionsFromNoTradeBuffer(NumericVector current_positions, NumericVector current_prices, NumericVector current_theo_weights, double cap_equity, double trade_buffer);
+RcppExport SEXP _rsims_positionsFromNoTradeBuffer(SEXP current_positionsSEXP, SEXP current_pricesSEXP, SEXP current_theo_weightsSEXP, SEXP cap_equitySEXP, SEXP trade_bufferSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -15,15 +15,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type current_prices(current_pricesSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type current_theo_weights(current_theo_weightsSEXP);
     Rcpp::traits::input_parameter< double >::type cap_equity(cap_equitySEXP);
-    Rcpp::traits::input_parameter< int >::type num_assets(num_assetsSEXP);
     Rcpp::traits::input_parameter< double >::type trade_buffer(trade_bufferSEXP);
-    rcpp_result_gen = Rcpp::wrap(positionsFromNoTradeBuffer(current_positions, current_prices, current_theo_weights, cap_equity, num_assets, trade_buffer));
+    rcpp_result_gen = Rcpp::wrap(positionsFromNoTradeBuffer(current_positions, current_prices, current_theo_weights, cap_equity, trade_buffer));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_rsims_positionsFromNoTradeBuffer", (DL_FUNC) &_rsims_positionsFromNoTradeBuffer, 6},
+    {"_rsims_positionsFromNoTradeBuffer", (DL_FUNC) &_rsims_positionsFromNoTradeBuffer, 5},
     {NULL, NULL, 0}
 };
 

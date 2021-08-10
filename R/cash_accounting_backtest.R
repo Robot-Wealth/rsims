@@ -14,6 +14,8 @@
 #' @examples
 #' @export
 cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash = 10000, commission_pct = 0, capitalise_profits = FALSE) {
+  if(trade_buffer < 0)
+    stop("trade_buffer must be greater than or equal to zero")
   # get tickers for later
   tickers <- colnames(prices)[-1] %>%
     stringr::str_remove("price_usd_")
@@ -29,6 +31,7 @@ cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash 
   for(i in 1:nrow(prices)) {
     # TODO: does wrapping in as.numeric() speed up? (creates array as opposed to named vector). Don't need the names later?
     # TODO: check that date is first column in backtest_theo_weights and backtest_prices
+    # TODO: checks on data alignment, length etc
     current_date <- prices[i, "date"]
     current_prices <- prices[i, -1]
     current_theo_weights <- theo_weights[i, -1]
@@ -39,7 +42,7 @@ cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash 
 
     # update positions based on no-trade buffer
     # TODO: consider commissions in calculating position sizes (otherwise can go over leverage 1)
-    target_positions <- positionsFromNoTradeBuffer(current_positions, current_prices, current_theo_weights, cap_equity, num_assets, trade_buffer)
+    target_positions <- positionsFromNoTradeBuffer(current_positions, current_prices, current_theo_weights, cap_equity, trade_buffer)
 
     # calculate position deltas, trade values and commissions
     trades <- target_positions - current_positions
