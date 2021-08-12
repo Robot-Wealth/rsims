@@ -1,7 +1,7 @@
 ---
 title: "Wrangling data for input to simulation engine"
 output: 
-  rmarkdown::html_vignette:
+  pdf_document:
     keep_md: true
 vignette: >
   %\VignetteIndexEntry{Wrangling-data-for-input-to-simulation-engine}
@@ -53,6 +53,7 @@ library(glue)
 First, let's assume you have a long dataframe consisting of columns for ticker, date, price, and weight:
 
 ```{r}
+# load("~/rsims/data/backtest_df_long.RData")
 head(backtest_df_long)
 ```
 How you arrived at the weights for each product for each day is up to you. `backtest_df_long` contains weights for a simple cross-sectional momentum strategy. 
