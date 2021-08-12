@@ -16,7 +16,16 @@
 cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash = 10000, commission_pct = 0, capitalise_profits = FALSE) {
   if(trade_buffer < 0)
     stop("trade_buffer must be greater than or equal to zero")
+
+  misaligned_timestamps <- which(prices[, 1] != theo_weights[, 1])
+  if(length(misaligned_timestamps) > 0)
+    stop(glue::glue("Misaligned timestamps at indexes {misaligned_timestamps}"))
+
+  if(!all.equal(dim(prices), dim(theo_weights)))
+    stop("Prices and weights matrixes must have same dimensions")
+
   # get tickers for later
+  # TODO: fix this - isn't generic. Push upstream? Pass tickers as arg? Or just get straght col names?
   tickers <- colnames(prices)[-1] %>%
     stringr::str_remove("price_usd_")
 
@@ -60,9 +69,9 @@ cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash 
       data = c(
         rep(as.numeric(current_date), num_assets + 1),
         c(1, current_prices),
-        c(0, current_positions),
+        c(cash, current_positions),
         c(cash, position_value),
-        c(0, trades),
+        c(-sum(trade_value), trades),
         c(-sum(trade_value), trade_value),
         c(0, commissions)
       ),
@@ -84,8 +93,8 @@ cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash 
 
   # Combine list of matrixes into dataframe
   do.call(rbind, row_list) %>%
-    as_tibble(rownames = "ticker") %>%
-    mutate(
+    tibble::as_tibble(rownames = "ticker") %>%
+    dplyr::mutate(
       Date = as.Date(Date, origin ="1970-01-01")
     )
 }

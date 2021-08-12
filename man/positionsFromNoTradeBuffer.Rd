@@ -2,19 +2,16 @@
 % Please edit documentation in R/RcppExports.R
 \name{positionsFromNoTradeBuffer}
 \alias{positionsFromNoTradeBuffer}
-\title{Calculate target positions from theoretical weights and trade buffer parameter
-TODO: remove current weights calculation and instead pass as argument}
+\title{Calculate target positions from theoretical weights and trade buffer parameter}
 \usage{
 positionsFromNoTradeBuffer(
   current_positions,
   current_prices,
   current_theo_weights,
   cap_equity,
-  num_assets,
   trade_buffer
 )
 }
 \description{
 Calculate target positions from theoretical weights and trade buffer parameter
-TODO: remove current weights calculation and instead pass as argument
 }
