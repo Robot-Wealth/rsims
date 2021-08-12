@@ -1,5 +1,3 @@
-library(tidyverse)
-
 testthat::test_that("New positions are correct for different values of trade_buffer", {
   # get into initial positions
   current_prices <- c(100, 60, 20)
@@ -45,7 +43,7 @@ testthat::test_that("Inputs to cash_backtest are legitimate", {
 
   # get weights as a wide matrix
   backtest_theo_weights <- backtest_df %>%
-    select(date, starts_with("theo_weight_")) %>%
+    dplyr::select(date, starts_with("theo_weight_")) %>%
     data.matrix()
 
   # NA weights should be zero
@@ -53,7 +51,7 @@ testthat::test_that("Inputs to cash_backtest are legitimate", {
 
   # get prices as a wide matrix
   backtest_prices <- backtest_df %>%
-    select(date, starts_with("price_")) %>%
+    dplyr::select(date, starts_with("price_")) %>%
     data.matrix()
 
   # simulation parameters
@@ -82,7 +80,7 @@ testthat::test_that("Commission calculations are correct", {
 
   # get weights as a wide matrix
   backtest_theo_weights <- backtest_df %>%
-    select(date, starts_with("theo_weight_")) %>%
+    dplyr::select(date, starts_with("theo_weight_")) %>%
     data.matrix()
 
   # NA weights should be zero
@@ -90,13 +88,14 @@ testthat::test_that("Commission calculations are correct", {
 
   # get prices as a wide matrix
   backtest_prices <- backtest_df %>%
-    select(date, starts_with("price_")) %>%
+    dplyr::select(date, starts_with("price_")) %>%
     data.matrix()
 
   # simulation parameters
   initial_cash <- 1000
   capitalise_profits <- FALSE  # remain fully invested?
   commission_pct <- 0.001
+  trade_buffer <- 0.05
 
   results_df <- cash_backtest(backtest_prices, backtest_theo_weights, trade_buffer, initial_cash, commission_pct, capitalise_profits)
 
