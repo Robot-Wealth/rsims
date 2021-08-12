@@ -1,0 +1,156 @@
+---
+title: "Wrangling data for input to simulation engine"
+output: 
+  rmarkdown::html_vignette:
+    keep_md: true
+vignette: >
+  %\VignetteIndexEntry{Wrangling-data-for-input-to-simulation-engine}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+`cash_backtest` is a reasonably well-optimised event-driven backtesting engine. In testing, it processed an 80-asset, 2300-day backtest in less than 150 milliseconds. 
+
+It was built with speed in mind, which required trading off certain conveniences such as holding weights and prices in long-format dataframes indexed by a human-readable timestamp. Instead, it requires the user to ensure their input data meets some fairly strict requirements. 
+
+The purpose of this vignette is to provide an example of how to prepare input data for `cash_backtest`.
+
+## Input Data Requirements
+
+### Price and weight matrixes
+
+`cash_backtest` requires two matrixes of identical dimensions. Both matrix's first column needs to be a timestamp or date in Unix format. 
+
+The timestamp should be aligned with the weights and prices such that on a single row, the price is the price you assume you can trade into the weight at. This may require lagging of signals or weights upstream of the simulation and is up to the user. In another vignette, we provide an example of a simple workflow for lagging weights with respect to prices.  
+
+The first input matrix contains prices, one column for each asset or product in the strategy's universe.
+
+The second matrix contains theoretical or ideal weights, again, one column for each asset in the strategy's universe. 
+
+Columns must map between the two matrixes:
+* Column 1 is always the date or timestamp column
+* Column 2 contains the prices and weights for the first asset
+* Column 3 contains the prices and weights for the second asset
+* *etc*
+
+Let's run through an example of how you might wrangle such input data using tools from the tidyverse. 
+
+```{r setup}
+library(rsims)
+library(tidyverse)
+library(glue)
+```
+
+First, let's assume you have a long dataframe consisting of columns for ticker, date, price, and weight:
+
+```{r}
+head(backtest_df_long)
+```
+How you arrived at the weights for each product for each day is up to you. `backtest_df_long` contains weights for a simple cross-sectional momentum strategy. 
+
+Recall that we need to end up with two wide matrixes of date and prices and date and weights, and that the columns of each matrix must map column-wise. 
+
+One easy way to do that is use `tidyr::pivot_wider`, which will guarantee that prices and weights will be mapped correctly:
+
+```{r}
+backtest_df <- backtest_df_long %>% 
+  pivot_wider(names_from = ticker, values_from = c(price_usd, theo_weight)) 
+
+head(backtest_df)
+```
+From this point, we can split our single wide matrix into two matrixes. Note that since matrixes must hold a common data type, our date column will be converted to a Unix-style timestamp. 
+
+```{r}
+# get weights as a wide matrix
+# note that date column will get converted to unix timestamp
+backtest_theo_weights <- backtest_df %>% 
+  select(date, starts_with("theo_weight_")) %>% 
+  data.matrix()
+```
+
+We have some `NA` weights where we didn't have a weight for an asset on a particular day in our long dataframe. It makes sense to replace these with zero. 
+
+```{r}
+# NA weights should be zero
+backtest_theo_weights[is.na(backtest_theo_weights)] <- 0
+
+head(backtest_theo_weights, c(5, 5))
+```
+
+We do the same thing for our prices, but this time where an asset didn't have a price (for example because it wasn't in existence on particular day), we leave the existing `NA`:
+
+```{r}
+# get prices as a wide matrix
+# note that date column will get converted to unix timestamp
+backtest_prices <- backtest_df %>% 
+  select(date, starts_with("price_")) %>% 
+  data.matrix()
+
+head(backtest_prices, c(5, 5))
+```
+
+At this point, we are ready to simulate trading according to our weights:
+
+```{r}
+# simulation parameters
+initial_cash <- 10000
+capitalise_profits <- FALSE  # remain fully invested?
+trade_buffer <- 0.
+commission_pct <- 0.
+
+# simulation
+results_df <- cash_backtest(
+  backtest_prices, 
+  backtest_theo_weights, 
+  trade_buffer, 
+  initial_cash, 
+  commission_pct, 
+  capitalise_profits
+)
+
+head(results_df)
+```
+
+```{r, fig.height=5, fig.width=7}
+equity_curve <- results_df %>% 
+  group_by(Date) %>% 
+  summarise(Equity = sum(Value, na.rm = TRUE)) 
+
+fin_eq <- equity_curve %>% 
+  tail(1) %>% 
+  pull(Equity)
+
+init_eq <- equity_curve %>% 
+  head(1) %>% 
+  pull(Equity)
+
+total_return <- (fin_eq/init_eq - 1) * 100
+days <- nrow(equity_curve)
+ann_return <- total_return * 365/days
+sharpe <- equity_curve %>%
+  mutate(returns = Equity/lag(Equity)- 1) %>%
+  na.omit() %>%
+  summarise(sharpe = sqrt(355)*mean(returns)/sd(returns)) %>%
+  pull()
+
+equity_curve %>% 
+  ggplot(aes(x = Date, y = Equity)) +
+    geom_line() +
+    labs(
+      title = "Momentum Backtest - Cash Accounting",
+      subtitle = glue(
+        "Momentum backtest, costs {commission_pct*100}% trade value, trade buffer = {trade_buffer}, trade on close
+        {round(total_return, 1)}% total return, {round(ann_return, 1)}% annualised, Sharpe {round(sharpe, 2)}"
+      )
+    ) +
+  theme_bw()
+```

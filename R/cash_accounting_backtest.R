@@ -25,9 +25,7 @@ cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash 
     stop("Prices and weights matrixes must have same dimensions")
 
   # get tickers for later
-  # TODO: fix this - isn't generic. Push upstream? Pass tickers as arg? Or just get straght col names?
-  tickers <- colnames(prices)[-1] %>%
-    stringr::str_remove("price_usd_")
+  tickers <- colnames(prices)[-1]
 
   # initial state
   num_assets <- ncol(prices) - 1  # -1 for date column
