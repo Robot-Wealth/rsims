@@ -46,7 +46,9 @@ Let's run through an example of how you might wrangle such input data using tool
 
 ```{r setup}
 library(rsims)
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 
 # load("~/rsims/data/backtest_df_long.RData")
 head(backtest_df_long)
