@@ -15,7 +15,8 @@ RoxygenNote: 7.1.1
 Suggests: 
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    pkgdown
 Config/testthat/edition: 3
 Imports: 
     dplyr,

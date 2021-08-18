@@ -39,7 +39,7 @@ cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash 
     # TODO: does wrapping in as.numeric() speed up? (creates array as opposed to named vector). Don't need the names later?
     # TODO: check that date is first column in backtest_theo_weights and backtest_prices
     # TODO: checks on data alignment, length etc
-    current_date <- prices[i, "date"]
+    current_date <- prices[i, 1]
     current_prices <- prices[i, -1]
     current_theo_weights <- theo_weights[i, -1]
 

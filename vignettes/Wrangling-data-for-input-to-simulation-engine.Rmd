@@ -47,15 +47,13 @@ Let's run through an example of how you might wrangle such input data using tool
 ```{r setup}
 library(rsims)
 library(tidyverse)
-library(glue)
+
+# load("~/rsims/data/backtest_df_long.RData")
+head(backtest_df_long)
 ```
 
 First, let's assume you have a long dataframe consisting of columns for ticker, date, price, and weight:
 
-```{r}
-# load("~/rsims/data/backtest_df_long.RData")
-head(backtest_df_long)
-```
 How you arrived at the weights for each product for each day is up to you. `backtest_df_long` contains weights for a simple cross-sectional momentum strategy. 
 
 Recall that we need to end up with two wide matrixes of date and prices and date and weights, and that the columns of each matrix must map column-wise. 
@@ -70,17 +68,15 @@ head(backtest_df)
 ```
 From this point, we can split our single wide matrix into two matrixes. Note that since matrixes must hold a common data type, our date column will be converted to a Unix-style timestamp. 
 
+First, the weights matrix, which will have some `NA` values where we didn't have a weight for an asset on a particular day in our long dataframe. It makes sense to replace these with zero.
+
 ```{r}
 # get weights as a wide matrix
 # note that date column will get converted to unix timestamp
 backtest_theo_weights <- backtest_df %>% 
   select(date, starts_with("theo_weight_")) %>% 
   data.matrix()
-```
 
-We have some `NA` weights where we didn't have a weight for an asset on a particular day in our long dataframe. It makes sense to replace these with zero. 
-
-```{r}
 # NA weights should be zero
 backtest_theo_weights[is.na(backtest_theo_weights)] <- 0
 
@@ -122,6 +118,8 @@ head(results_df)
 ```
 
 ```{r, fig.height=5, fig.width=7}
+library(glue)
+
 equity_curve <- results_df %>% 
   group_by(Date) %>% 
   summarise(Equity = sum(Value, na.rm = TRUE)) 
