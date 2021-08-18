@@ -1,4 +1,4 @@
-# TODO: data has changed
+# TODO: data has changed - update expected results
 
 testthat::test_that("New positions are correct for different values of trade_buffer", {
   # get into initial positions
