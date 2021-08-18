@@ -1,3 +1,5 @@
+# TODO: data has changed
+
 testthat::test_that("New positions are correct for different values of trade_buffer", {
   # get into initial positions
   current_prices <- c(100, 60, 20)
