@@ -2,7 +2,10 @@
 
 export("%>%")
 export(cash_backtest)
+export(fixed_percent)
+export(min_commission_backtest)
 export(positionsFromNoTradeBuffer)
+export(positionsFromNoTradeBufferMinComm)
+export(us_tiered_commission)
 importFrom(Rcpp,sourceCpp)
 importFrom(magrittr,"%>%")
-useDynLib(rsims)
