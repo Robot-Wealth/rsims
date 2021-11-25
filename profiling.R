@@ -3,7 +3,7 @@ library(profvis)
 library(microbenchmark)
 library(tidyverse)
 
-load("~/rsims/data/backtest_df.RData")
+load("~/rsims/data/backtest_df_long.RData")
 
 # get weights as a wide matrix (could do equal weight, in proportion to factor/signal, top n etc)
 backtest_theo_weights <- backtest_df %>%
@@ -41,7 +41,7 @@ commission_pct <- fees$fee[fees$tier==fee_tier]
 # simulation benchmarking and optimisation
 microbenchmark(
   cash_backtest(backtest_prices, backtest_theo_weights, trade_buffer, initial_cash, commission_pct, capitalise_profits),
-  times = 10
+  times = 50
 )
 # Unit: milliseconds
 #      min       lq     mean   median       uq      max  neval
@@ -49,7 +49,7 @@ microbenchmark(
 
 profvis({
   cash_backtest(backtest_prices, backtest_theo_weights, trade_buffer, initial_cash, commission_pct, capitalise_profits)
-}, interval = 0.0075)
+}, interval = 0.005)
 
 
 
@@ -69,15 +69,50 @@ gbm_sim <- function(nsim = 100, t = 25, mu = 0, sigma = 0.1, S0 = 100, dt = 1./2
 
 # returns process
 years <- 10
-universe <- 500
-dates <- seq(as.numeric(as.Date("1980-01-01")), as.numeric(as.Date("1980-01-01"))+(years*365))
-prices <- cbind(dates, gbm_sim(nsim = universe, t = years*365, mu = 0.1, sigma = 0.1))
+universe <- 5
+x <- 1
+tickers <- vector()
+repeat{
+  tickers[[x]] <- paste0(sample(LETTERS, 5, replace = TRUE), collapse = "")
+  x <- x + 1
+  if(x == universe + 1)
+    break
+}
+n_distinct(tickers)
+date <- seq(as.numeric(as.Date("1980-01-01")), as.numeric(as.Date("1980-01-01"))+(years*365))
+date <-
+prices <- cbind(date, gbm_sim(nsim = universe, t = years*365, mu = 0.1, sigma = 0.1))
+colnames(prices) <- c("date", tickers)
 weights <- cbind(dates, rbind(rep(0, universe), matrix(rnorm(years*365*universe), nrow = years*365)))
+colnames(weights) <- c("date", tickers)
 
 head(weights, c(5, 5))
 head(prices, c(5, 5))
 dim(weights)
 dim(prices)
+library(tidyr)
+btdf <- prices %>%
+  as.data.frame() %>%
+  mutate(date = as.Date(date, origin ="1970-01-01")) %>%
+  pivot_longer(-date, names_to = "ticker", values_to = "price") %>%
+  left_join(
+    weights %>%
+      as.data.frame() %>%
+      mutate(date = as.Date(date, origin ="1970-01-01")) %>%
+      pivot_longer(-date, names_to = "ticker", values_to = "theo_weight"),
+    by = c("date", "ticker")
+  )
+
+profvis({
+  cash_backtest(
+    prices,
+    weights,
+    trade_buffer = 0.,
+    initial_cash = 1000,
+    commission_pct = 0.001,
+    capitalise_profits = FALSE
+  )
+}, interval = 0.01)
 
 # simulation benchmarking and optimisation
 microbenchmark(
@@ -162,6 +197,8 @@ microbenchmark(
 # min       lq     mean   median       uq      max neval
 # 6.867289 6.915961 7.134657 6.941712 7.099699 8.229169    10
 
+library(rsims)
+
 get_mean_time <- function(days, universe, times = 5) {
   dates <- seq(as.numeric(as.Date("1980-01-01")), as.numeric(as.Date("1980-01-01"))+(days))
   prices <- cbind(dates, gbm_sim(nsim = universe, t = days, mu = 0.1, sigma = 0.1))
@@ -181,16 +218,15 @@ get_mean_time <- function(days, universe, times = 5) {
   mean(res$time)/1e9
 }
 
-# num_assets <- c(10, 30, 100, 300, 1000, 3000, 10000)
-num_assets <- seq(100, 500, 50)
+num_assets <- seq(100, 1000, 100)
 num_days <- c(10, 20, 30, 40)*252
 
 means <- list()
 for(universe in num_assets) {
-  print(glue("Doing universe size {universe}"))
+  print(glue::glue("Doing universe size {universe}"))
   for(days in num_days) {
-    print(glue("Doing {days} days"))
-    means <- c(means, get_mean_time(days, universe, times = 20))
+    print(glue::glue("Doing {days} days"))
+    means <- c(means, get_mean_time(days, universe, times = 10))
   }
 }
 
@@ -202,10 +238,15 @@ colnames(df) <- c(num_assets, "days")
 df %>%
   pivot_longer(cols = -days, names_to = "universe_size", values_to = "mean_sim_time") %>%
   mutate(universe_size = as.numeric(universe_size)) %>%
-  filter(days != 10080) %>%
   ggplot(aes(x = universe_size, y = mean_sim_time, colour = factor(days))) +
     geom_line() +
     geom_point() +
+    labs(
+      x = "Universe size",
+      y = "Mean simulation time, seconds",
+      title = "Mean simulation time from 10 iterations",
+      colour = "Time Steps"
+    ) +
     theme_bw()
 
 

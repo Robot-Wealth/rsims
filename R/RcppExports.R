@@ -7,3 +7,9 @@ positionsFromNoTradeBuffer <- function(current_positions, current_prices, curren
     .Call('_rsims_positionsFromNoTradeBuffer', PACKAGE = 'rsims', current_positions, current_prices, current_theo_weights, cap_equity, trade_buffer)
 }
 
+#' Calculate target positions from theoretical weights and trade buffer parameter in the presence of minimum commission
+#' @export
+positionsFromNoTradeBufferMinComm <- function(current_positions, current_prices, current_theo_weights, cap_equity, trade_buffer) {
+    .Call('_rsims_positionsFromNoTradeBufferMinComm', PACKAGE = 'rsims', current_positions, current_prices, current_theo_weights, cap_equity, trade_buffer)
+}
+
