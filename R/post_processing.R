@@ -412,3 +412,74 @@ comm_pct_exp_chart <- function(results_df, title, fill_scale, colour_scale) {
       title = title
     )
 }
+
+#' Combine portfolio anda asset returns
+#'
+#' @param results_df Results dataframe from rsims backtest
+#' @param returns_df Dataframe of asset returns
+#'
+#' @return Combined dataframe of portfolio and asset returns
+#' @export
+combine_port_asset_returns <- function(results_df, returns_df) {
+  # create df of port and asset returns
+  results_df %>%
+    calc_port_returns() %>%
+    select(date, returns) %>%
+    mutate(ticker = "Portfolio") %>%
+    bind_rows(returns_df %>% select(ticker, date, returns)) %>%
+    arrange(date)
+}
+
+#' Rolling annualised portfolio performance
+#'
+#' @param port_returns_df Dataframe of portfolio returns
+#'
+#' @return Dataframe of rolling annualised portfolio statistics
+#' @export
+#'
+rolling_ann_port_perf <- function(port_returns_df) {
+  # rolling performance of portfolio
+
+  roll_df <- port_returns_df %>%
+    mutate(
+      roll_ann_return = 252*roll_mean(returns, width = 252, min_obs = 252),
+      roll_ann_sd = sqrt(252)*roll_sd(returns, width = 252, min_obs = 252),
+      roll_sharpe = roll_ann_return/roll_ann_sd
+    ) %>%
+    select(date, roll_ann_return, roll_ann_sd, roll_sharpe) %>%
+    pivot_longer(cols = c(-date), names_to = "metric", values_to = "value")
+
+  roll_df
+}
+
+#' Rolling annualised portfolio performance plot
+#'
+#' @param perf_df Dataframe of rolling annualised metrics
+#'
+#' @return ggplot2 of rolling annualised performance
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' results_df %>%
+#'   calc_port_returns() %>%
+#'   rolling_ann_port_perf() %>%
+#'   rolling_ann_port_perf_plot()
+#' }
+rolling_ann_port_perf_plot <- function(perf_df) {
+  metric_names <- as_labeller(c(
+    `roll_ann_return` = "Return",
+    `roll_ann_sd` = "Volatility",
+    `roll_sharpe` = "Sharpe"
+  ))
+
+  perf_df %>%
+    ggplot(aes(x = date, y = value)) +
+    geom_line() +
+    facet_wrap(~metric, scales = "free_y", ncol = 1, labeller = metric_names) +
+    labs(
+      x = "Date",
+      y = "Volatility",
+      title = "1-year Rolling Annualised Performance"
+    )
+}
