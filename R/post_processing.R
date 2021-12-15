@@ -217,7 +217,7 @@ calc_ann_turnover <- function(results_df, mean_equity, start_date, end_date) {
   if(length(totalselltrades) == 0) {
     return(0)
   } else {
-    -100*totalselltrades / (mean_equity * (lubriudate::year(end_date) - lubriudate::year(start_date)))
+    -100*totalselltrades / (mean_equity * (lubridate::year(end_date) - lubridate::year(start_date)))
   }
 }
 
