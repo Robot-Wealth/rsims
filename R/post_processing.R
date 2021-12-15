@@ -275,7 +275,7 @@ summary_performance <- function(results_df, initial_equity) {
       "Ann.Sharpe" = `Ann.Return(%)`/`Ann.Volatility(%)`
     ) %>%
     bind_cols(c(
-      positions %>%
+      results_df %>%
         calc_ann_turnover(mean_equity, start_date, end_date) %>%
         tibble::enframe(name = NULL, value = "Ave.Ann.Turnover(%)"),
       total_profit %>%
