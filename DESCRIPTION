@@ -1,6 +1,6 @@
 Package: rsims
 Title: Financial Simulation in R
-Version: 0.0.0.9005
+Version: 0.0.0.9006
 Authors@R: 
     person(given = "Kris",
            family = "Longmore-Dodd",
@@ -25,6 +25,7 @@ Imports:
     stringr,
     magrittr,
     ggplot2,
+    lubridate,
     Rcpp
 LinkingTo: 
     Rcpp
