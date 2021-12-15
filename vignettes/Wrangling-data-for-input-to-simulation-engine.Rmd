@@ -51,7 +51,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-# load("~/rsims/data/backtest_df_long.RData")
+load("~/rsims/data/backtest_df_long.RData")
 head(backtest_df_long)
 ```
 
@@ -65,7 +65,7 @@ One easy way to do that is use `tidyr::pivot_wider`, which will guarantee that p
 
 ```{r}
 backtest_df <- backtest_df_long %>% 
-  pivot_wider(names_from = ticker, values_from = c(price_usd, theo_weight)) 
+  pivot_wider(names_from = ticker, values_from = c(price, weight)) 
 
 head(backtest_df)
 ```
@@ -77,7 +77,7 @@ First, the weights matrix, which will have some `NA` values where we didn't have
 # get weights as a wide matrix
 # note that date column will get converted to unix timestamp
 backtest_theo_weights <- backtest_df %>% 
-  select(date, starts_with("theo_weight_")) %>% 
+  select(date, starts_with("weight_")) %>% 
   data.matrix()
 
 # NA weights should be zero

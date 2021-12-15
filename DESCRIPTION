@@ -1,6 +1,6 @@
 Package: rsims
 Title: Financial Simulation in R
-Version: 0.0.0.9003
+Version: 0.0.0.9004
 Authors@R: 
     person(given = "Kris",
            family = "Longmore-Dodd",
@@ -17,7 +17,6 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0),
     pkgdown,
-    ggplot2,
 Config/testthat/edition: 3
 Imports: 
     dplyr,
@@ -25,6 +24,7 @@ Imports:
     tidyr,
     stringr,
     magrittr,
+    ggplot2,
     Rcpp
 LinkingTo: 
     Rcpp
