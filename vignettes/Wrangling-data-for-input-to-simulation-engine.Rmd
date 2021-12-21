@@ -50,8 +50,10 @@ library(rsims)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(here)
 
-load("~/rsims/data/backtest_df_long.RData")
+# load("~/rsims/data/backtest_df_long.RData")
+load(here::here("data", "backtest_df_long.RData"))
 head(backtest_df_long)
 ```
 
