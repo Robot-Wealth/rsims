@@ -1,7 +1,7 @@
 pandoc: 2.7.3
-pkgdown: 1.6.1
+pkgdown: 2.0.1
 pkgdown_sha: ~
 articles:
   Wrangling-data-for-input-to-simulation-engine: Wrangling-data-for-input-to-simulation-engine.html
-last_built: 2021-08-19T03:24Z
+last_built: 2021-12-21T01:35Z
 

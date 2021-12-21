@@ -19,6 +19,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-home">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -31,18 +33,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">rsims</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.0.9002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.0.0.9008</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="reference/index.html">Reference</a>
 </li>
@@ -71,55 +67,55 @@
 
       </header><div class="row">
   <div class="contents col-md-9">
-<div id="rsims" class="section level1">
-<div class="page-header"><h1 class="hasAnchor">
-<a href="#rsims" class="anchor"></a>rsims</h1></div>
+<div class="section level1">
+<div class="page-header"><h1 id="rsims">rsims<a class="anchor" aria-label="anchor" href="#rsims"></a>
+</h1></div>
 <p>Tools for financial simulation</p>
-<div id="install-and-load" class="section level2">
-<h2 class="hasAnchor">
-<a href="#install-and-load" class="anchor"></a>Install and load</h2>
+<div class="section level2">
+<h2 id="install-and-load">Install and load<a class="anchor" aria-label="anchor" href="#install-and-load"></a>
+</h2>
 <p>The easiest way to install and load <code>rsims</code> is using <code>pacman::p_load_current_gh</code> which wraps <code>devtools::install_github</code> and <code>require</code>:</p>
 <p><code>pacman::p_load_current_gh("Robot-Wealth/rsims", dependencies = TRUE)</code></p>
 </div>
-<div id="usage" class="section level2">
-<h2 class="hasAnchor">
-<a href="#usage" class="anchor"></a>Usage</h2>
+<div class="section level2">
+<h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
+</h2>
 <p>The key function is <code>cash_backtest</code>, an optimised event-driven backtesting function.</p>
 <p><code>cash_backtest</code> simulates trading into a set of weights (calculated upstream) subject to transaction cost and other constraints.</p>
 <p>It expects matrixes for <code>prices</code> and <code>theo_weights</code>, both with a timestamp as the first column and of the same dimensions. Further details in the function documentation.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">rsims</span><span class="op">)</span>
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">rsims</span><span class="op">)</span>
 <span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cash_backtest.html">cash_backtest</a></span><span class="op">(</span><span class="va">prices</span>, <span class="va">theo_weights</span>, trade_buffer <span class="op">=</span> <span class="fl">0.</span>, initial_cash <span class="op">=</span> <span class="fl">10000</span>, commission_pct <span class="op">=</span> <span class="fl">0</span>, capitalise_profits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="approach-to-calculating-position-deltas" class="section level2">
-<h2 class="hasAnchor">
-<a href="#approach-to-calculating-position-deltas" class="anchor"></a>Approach to calculating position deltas</h2>
+<div class="section level2">
+<h2 id="approach-to-calculating-position-deltas">Approach to calculating position deltas<a class="anchor" aria-label="anchor" href="#approach-to-calculating-position-deltas"></a>
+</h2>
 <p>Currently there is one module implemented for calculating position deltas: the “no-trade region” approach. See the examples for dteails on how this approach works, where it is reasonable, where it shouldn’t be used.</p>
 <p>The intent is to implement other approaches in the future, such as numerical optimisation of the return-risk-cost problem, subject to constraints.</p>
 </div>
-<div id="cost-model" class="section level2">
-<h2 class="hasAnchor">
-<a href="#cost-model" class="anchor"></a>Cost model</h2>
+<div class="section level2">
+<h2 id="cost-model">Cost model<a class="anchor" aria-label="anchor" href="#cost-model"></a>
+</h2>
 <p>Currently <code>rsims</code> implements a simplified “fixed percent of traded value” cost model. For some applications, market impact, spread, and commission might be reasonably represented by such a model. No attempt is made (yet) to explicitly account for these costs separately. Borrow, margin and funding costs are not yet implemented.</p>
 </div>
-<div id="examples-and-vignettes" class="section level2">
-<h2 class="hasAnchor">
-<a href="#examples-and-vignettes" class="anchor"></a>Examples and vignettes</h2>
-<div id="wrangling-data-for-input-to-cash_backtest" class="section level3">
-<h3 class="hasAnchor">
-<a href="#wrangling-data-for-input-to-cash_backtest" class="anchor"></a>Wrangling data for input to <code>cash_backtest</code>
+<div class="section level2">
+<h2 id="examples-and-vignettes">Examples and vignettes<a class="anchor" aria-label="anchor" href="#examples-and-vignettes"></a>
+</h2>
+<div class="section level3">
+<h3 id="wrangling-data-for-input-to-cash_backtest">Wrangling data for input to <code>cash_backtest</code>
+<a class="anchor" aria-label="anchor" href="#wrangling-data-for-input-to-cash_backtest"></a>
 </h3>
 </div>
-<div id="finding-the-historically-sharpe-optimal-trade-buffer-parameter" class="section level3">
-<h3 class="hasAnchor">
-<a href="#finding-the-historically-sharpe-optimal-trade-buffer-parameter" class="anchor"></a>Finding the historically sharpe-optimal trade buffer parameter</h3>
-<p>Here’s a good derivation from @macrocephalopod on Twitter: <a href="https://twitter.com/macrocephalopod/status/1373236950728052736" class="uri">https://twitter.com/macrocephalopod/status/1373236950728052736</a></p>
+<div class="section level3">
+<h3 id="finding-the-historically-sharpe-optimal-trade-buffer-parameter">Finding the historically sharpe-optimal trade buffer parameter<a class="anchor" aria-label="anchor" href="#finding-the-historically-sharpe-optimal-trade-buffer-parameter"></a>
+</h3>
+<p>Here’s a good derivation from @macrocephalopod on Twitter: <a href="https://twitter.com/macrocephalopod/status/1373236950728052736" class="external-link uri">https://twitter.com/macrocephalopod/status/1373236950728052736</a></p>
 <p>This leads to simple heuristic trading rule - which is theoretically optimal if your costs are linear and you don’t mind holding exposures within a certain range.</p>
 <p>It’s not a good approach when your trading costs aren’t approximately linear, for example, small trading with a fixed minimum commission per trade.</p>
 </div>
-<div id="lagging-signal-with-respect-to-prices-lagging-theo-weights-is-equivalent" class="section level3">
-<h3 class="hasAnchor">
-<a href="#lagging-signal-with-respect-to-prices-lagging-theo-weights-is-equivalent" class="anchor"></a>Lagging signal with respect to prices (lagging theo weights is equivalent)</h3>
+<div class="section level3">
+<h3 id="lagging-signal-with-respect-to-prices-lagging-theo-weights-is-equivalent">Lagging signal with respect to prices (lagging theo weights is equivalent)<a class="anchor" aria-label="anchor" href="#lagging-signal-with-respect-to-prices-lagging-theo-weights-is-equivalent"></a>
+</h3>
 </div>
 </div>
 </div>
@@ -127,29 +123,42 @@
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <div class="license">
-<h2>License</h2>
+<h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
 <li><a href="LICENSE.html">Full license</a></li>
-<li><small><a href="https://opensource.org/licenses/mit-license.php">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
+<li><small><a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
 </ul>
 </div>
+
+
+<div class="citation">
+<h2 data-toc-skip>Citation</h2>
+<ul class="list-unstyled">
+<li><a href="authors.html#citation">Citing rsims</a></li>
+</ul>
+</div>
+
 <div class="developers">
-<h2>Developers</h2>
+<h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>Kris Longmore-Dodd <br><small class="roles"> Author, maintainer </small>  </li>
 </ul>
 </div>
+
+
 
   </div>
 </div>
 
 
       <footer><div class="copyright">
-  <p>Developed by Kris Longmore-Dodd.</p>
+  <p></p>
+<p>Developed by Kris Longmore-Dodd.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.1.</p>
 </div>
 
       </footer>
@@ -157,6 +166,8 @@
 
   
 
+
+  
 
   </body>
 </html>
