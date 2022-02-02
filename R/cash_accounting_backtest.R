@@ -1,4 +1,4 @@
-#' Cash Accounting Backtest
+#' Fixed Commission Backtest
 #'
 #' @param prices Matrix of trade prices. Column 1 must be the timestamp or index.
 #' @param theo_weights Matrix of theoretical weights. Column 1 must be the timestamp or index.
@@ -13,7 +13,7 @@
 #' ensure that trades occur at appropriate prices.
 #' @examples
 #' @export
-cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash = 10000, commission_pct = 0, capitalise_profits = FALSE) {
+fixed_commission_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash = 10000, commission_pct = 0, capitalise_profits = FALSE) {
   if(trade_buffer < 0)
     stop("trade_buffer must be greater than or equal to zero")
 
@@ -95,4 +95,11 @@ cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash 
     dplyr::mutate(
       Date = as.Date(Date, origin ="1970-01-01")
     )
+}
+
+#' For backwards compatibility
+#' Follows renaming of original cash_backtest function to fixed_commission_backtest
+#' @export
+cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash = 10000, commission_pct = 0, capitalise_profits = FALSE) {
+  fixed_commission_backtest(prices, theo_weights, trade_buffer, initial_cash, commission_pct, capitalise_profits)
 }

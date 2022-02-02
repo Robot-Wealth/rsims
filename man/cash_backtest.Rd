@@ -2,7 +2,8 @@
 % Please edit documentation in R/cash_accounting_backtest.R
 \name{cash_backtest}
 \alias{cash_backtest}
-\title{Cash Accounting Backtest}
+\title{For backwards compatibility
+Follows renaming of original cash_backtest function to fixed_commission_backtest}
 \usage{
 cash_backtest(
   prices,
@@ -13,26 +14,7 @@ cash_backtest(
   capitalise_profits = FALSE
 )
 }
-\arguments{
-\item{prices}{Matrix of trade prices. Column 1 must be the timestamp or index.}
-
-\item{theo_weights}{Matrix of theoretical weights. Column 1 must be the timestamp or index.}
-
-\item{trade_buffer}{Trade buffer parameter}
-
-\item{initial_cash}{Inital cash balance}
-
-\item{commission_pct}{Percent commission charged on trades}
-
-\item{capitalise_profits}{If TRUE, utilise profits and initial cash balance in determining position sizes. If FALSE, profits accrue as a cash balance and are not reinvested.}
-}
-\value{
-long dataframe of results - dates, trades, commissions, value of portfolio components
-}
 \description{
-Cash Accounting Backtest
-}
-\details{
-\code{theo_weights} should be date-aligned with \code{prices} - it is up to the user to lag \code{theo_weights} as necessary to
-ensure that trades occur at appropriate prices.
+For backwards compatibility
+Follows renaming of original cash_backtest function to fixed_commission_backtest
 }
