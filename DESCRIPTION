@@ -27,6 +27,7 @@ Imports:
     ggplot2,
     lubridate,
     here,
+    roll,
     Rcpp
 LinkingTo: 
     Rcpp

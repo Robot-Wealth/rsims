@@ -443,8 +443,8 @@ rolling_ann_port_perf <- function(port_returns_df) {
 
   roll_df <- port_returns_df %>%
     mutate(
-      roll_ann_return = 252*roll_mean(returns, width = 252, min_obs = 252),
-      roll_ann_sd = sqrt(252)*roll_sd(returns, width = 252, min_obs = 252),
+      roll_ann_return = 252*roll::roll_mean(returns, width = 252, min_obs = 252),
+      roll_ann_sd = sqrt(252)*roll::roll_sd(returns, width = 252, min_obs = 252),
       roll_sharpe = roll_ann_return/roll_ann_sd
     ) %>%
     select(date, roll_ann_return, roll_ann_sd, roll_sharpe) %>%
