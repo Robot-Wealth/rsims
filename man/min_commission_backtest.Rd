@@ -11,7 +11,6 @@ min_commission_backtest(
   trade_buffer = 0,
   initial_cash = 10000,
   capitalise_profits = FALSE,
-  rebal_tolerance,
   leverage = 1,
   commission_fun,
   ...

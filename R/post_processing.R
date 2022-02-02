@@ -14,15 +14,16 @@ gg_colour_hue <- function(n) {
 
 #' Generate a set of portfolio colours
 #'
-#' @param n number of tickers in portfolio
+#' @param tickers tickers in portfolio
 #'
 #' @return Named character vector of n+2 default ggplot2 colours in hex format
 #' corresponding to each ticker plus "Cash" and "Portfolio"
 #' @export
 #'
 #' @examples
-#' portfolio_colours(10)
-portfolio_colours <- function(n) {
+#' portfolio_colours(c("ABC", "XYZ"))
+portfolio_colours <- function(tickers) {
+  n = length(tickers)
   my_cols <- gg_colour_hue(n)
   my_cols <- c(my_cols, "#00b0f6", "#E76BF3")
   names(my_cols) <- c(tickers, "Cash", "Portfolio")

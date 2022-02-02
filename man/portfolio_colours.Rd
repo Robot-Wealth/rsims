@@ -4,10 +4,10 @@
 \alias{portfolio_colours}
 \title{Generate a set of portfolio colours}
 \usage{
-portfolio_colours(n)
+portfolio_colours(tickers)
 }
 \arguments{
-\item{n}{number of tickers in portfolio}
+\item{tickers}{tickers in portfolio}
 }
 \value{
 Named character vector of n+2 default ggplot2 colours in hex format
@@ -17,5 +17,5 @@ corresponding to each ticker plus "Cash" and "Portfolio"
 Generate a set of portfolio colours
 }
 \examples{
-portfolio_colours(10)
+portfolio_colours(c("ABC", "XYZ"))
 }
