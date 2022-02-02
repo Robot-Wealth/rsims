@@ -267,7 +267,8 @@ summary_performance <- function(results_df, initial_equity) {
 
   mean_equity <- mean(port_returns$totalequity)
   total_profit <- tail(port_returns, 1)$totalequity - initial_equity
-  costs_pct_profit <- 100*sum(port_returns$totalcommission) / total_profit
+  total_commission <- sum(results_df$commission, na.rm = TRUE)
+  costs_pct_profit <- 100*total_commission / total_profit
 
   perf_table <- port_returns %>%
     summarise(
