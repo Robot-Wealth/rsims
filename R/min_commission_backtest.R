@@ -13,7 +13,7 @@
 #' ensure that trades occur at appropriate prices.
 #' @examples
 #' @export
-min_commission_backtest <- function(prices, unadjusted_prices, theo_weights, trade_buffer = 0., initial_cash = 10000, capitalise_profits = FALSE, rebal_tolerance, leverage = 1, commission_fun, ...) {
+min_commission_backtest <- function(prices, unadjusted_prices, theo_weights, trade_buffer = 0., initial_cash = 10000, capitalise_profits = FALSE, leverage = 1, commission_fun, ...) {
 
   MAINT_MARGIN <- 0.25
 
@@ -76,7 +76,7 @@ min_commission_backtest <- function(prices, unadjusted_prices, theo_weights, tra
       }
 
       # Update target shares based on signal
-      targetshares <- positionsFromNoTradeBuffer(share_pos, current_price, current_weights, cap_equity, trade_buffer)
+      targetshares <- positionsFromNoTradeBufferMinComm(share_pos, current_price, current_weights, cap_equity, trade_buffer)
       # targetshares <- share_pos
       # for(j in c(1:num_assets)) {
       #   if(current_price[j] == 0 || (current_weights[j] == 0)) {
