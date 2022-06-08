@@ -7,6 +7,7 @@
   # function for converting standard df to matrix with correct columns
   # min commission model for futures trading: assume we using raw prices, ie not continuous contract which would require passing adjusted and unadjusted price - commission_fun(trades, current_price, ...)
   # function for calculating futs positions from no trade buffer and min commission - can we use the share-based one?? futsPositionsFromNoTradeBufferMinComm(contract_pos, current_price, current_weights, cap_equity, trade_buffer)
+  # function for including interest accrued: maybe pass a matrix of STIRs or calculate upstream
 
 
 #' Futures Backtest, roll on days to expiry, minimum commission model
