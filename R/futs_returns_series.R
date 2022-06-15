@@ -1,3 +1,32 @@
+#' Number of Days to Expiry
+#'
+#' @description Add dte column to dataframe of futures contract prices. Here,
+#' dte refers to calendar days to expiry
+#'
+#' @param contracts dataframe of futures contract with at least
+#' ticker/date fields. date must be a date object.
+#'
+#' @return dataframe of futures contract prices/dates/dte
+#' @export
+#'
+#' @examples
+days_to_expiry <- function(contracts) {
+  stopifnot(
+    "date column must exist and be of type Date" = class(contracts$date) == "Date",
+    "ticker column must exist" = "ticker" %in% colnames(contracts)
+    )
+
+  contracts %>%
+    dplyr::left_join(
+      contracts %>%
+        dplyr::group_by(ticker) %>%
+        dplyr::summarise(expiry = last(date)),
+      by = "ticker"
+    ) %>%
+    dplyr::mutate(dte = expiry - date)
+}
+
+
 #' Roll on Days to Expiry
 #'
 #' @description Create a continuous returns series from a set of futures
