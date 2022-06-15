@@ -1,3 +1,6 @@
+
+# tests for days_to_expiry ------------------------------------------------
+
 test_that("Days to expiry errors if date column is not Date type", {
   futures <- readRDS(test_path("fixtures", "futures.rds"))
   futures$date <- as.character(futures$date)
@@ -45,5 +48,33 @@ test_that("Days to expiry is five when five days from expiry date", {
 })
 
 
+# tests for roll_on_dte ---------------------------------------------------
 
+test_that("Incorrect date column errors", {
+  futures <- readRDS(test_path("fixtures", "futures.rds"))
+  futures$date <- as.character(futures$date)
 
+  expect_error(roll_on_dte(futures), "date column must exist and be of type Date")
+})
+
+test_that("Missing ticker column errors", {
+  futures <- readRDS(test_path("fixtures", "futures.rds"))
+  futures <- dplyr::rename(futures, "Ticker" = ticker)
+
+  expect_error(roll_on_dte(futures), "ticker column must exist")
+})
+
+test_that("Missing close column errors", {
+  futures <- readRDS(test_path("fixtures", "futures.rds"))
+  futures <- dplyr::rename(futures, "Close" = close)
+
+  expect_error(roll_on_dte(futures), "close column must exist")
+})
+
+test_that("cumulative returns are correct without costs", {
+
+})
+
+test_that("cumulative returns are correct with costs", {
+
+})

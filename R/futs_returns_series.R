@@ -6,7 +6,7 @@
 #' @param contracts dataframe of futures contract with at least
 #' ticker/date fields. date must be a date object.
 #'
-#' @return dataframe of futures contract prices/dates/dte
+#' @return dataframe of futures contracts with date/dte fields
 #' @export
 #'
 #' @examples
@@ -20,7 +20,7 @@ days_to_expiry <- function(contracts) {
     dplyr::left_join(
       contracts %>%
         dplyr::group_by(ticker) %>%
-        dplyr::summarise(expiry = last(date)),
+        dplyr::summarise(expiry = dplyr::last(date)),
       by = "ticker"
     ) %>%
     dplyr::mutate(dte = expiry - date)
@@ -32,16 +32,51 @@ days_to_expiry <- function(contracts) {
 #' @description Create a continuous returns series from a set of futures
 #' contracts by rolling on a given number of days to expiry.
 #'
-#' @param contracts List of dfs of futures date/price
+#' @param contracts List of dfs of futures with at least ticker/date/close columns
 #' @param roll_dte Calendar days to expiry to roll into next contract
-#' @param cost Percent cost of trading into next contract
+#' @param cost Percent cost of trading into next contract (total cost of
+#' trading out of current contract and into next contract)
 #'
 #' @return A continuous futures return series
 #' @export
 #'
 #' @examples
-roll_on_dte <- function(contracts, roll_dte, cost) {
+roll_on_dte <- function(contracts, roll_dte = 1, cost = 0) {
+  stopifnot(
+    "date column must exist and be of type Date" = class(contracts$date) == "Date",
+    "ticker column must exist" = "ticker" %in% colnames(contracts),
+    "close column must exist" = "close" %in% colnames(contracts)
+  )
+  contracts <- days_to_expiry(contracts)
 
+  contracts %>%
+    # calculate returns separately for each contract (ticker)
+    # do this first before we throw away any data based on dte
+    group_by(ticker) %>%
+    dplyr::arrange(date) %>%
+    dplyr::mutate(
+      log_return = log(close/dplyr::lag(close)),
+      simple_return = (close - dplyr::lag(close))/dplyr::lag(close)
+    ) %>%
+    na.omit() %>%
+    # make new variable corresponding to base symbol (ES, GC, etc)
+    dplyr::mutate(symbol = stringr::str_extract(ticker, "[^-]+")) %>%   # extract everything before first "-"
+    dplyr::group_by(date, symbol) %>%
+    # when contracts$dte == roll_dte, sell the current contract at the close, and buy the next contract at the close
+    # that is, when dte == roll_dte, we get the return for the current expiry, and on the next day we get the return
+    # for the next expiry
+    dplyr::filter(dte <= roll_dte) %>%
+    # deduct cost on roll day
+    dplyr::mutate(
+      log_return = dplyr::case_when(dte == roll_dte ~ log_return - cost, TRUE ~ log_return),
+      simple_return = dplyr::case_when(dte == roll_dte ~ simple_return - cost, TRUE ~ simple_return)
+      )
+    # aggregate returns by jamming together consecutive contracts for each symbol
+    dplyr::group_by(symbol) %>%
+    dplyr::mutate(
+      cum_return = 1 + cumsum(log_return),
+      cum_simp_return = cumprod(1 + simple_return)
+    )
 }
 
 #' Roll on Open Interest
@@ -56,6 +91,26 @@ roll_on_dte <- function(contracts, roll_dte, cost) {
 #' @export
 #'
 #' @examples
-roll_on_dte <- function(contracts, cost) {
+roll_on_oi <- function(contracts, cost) {
+  contracts <- days_to_expiry(contracts)
 
+  contracts %>%
+    # calculate returns separately for each contract (ticker)
+    group_by(ticker) %>%
+    mutate(
+      log_return = log(close/dplyr::lag(close)),
+      simple_return = (close - dplyr::lag(close))/dplyr::lag(close)
+    ) %>%
+    na.omit() %>%
+    # make new variable corresponding to base symbol (ES, GC, etc)
+    mutate(symbol = stringr::str_extract(ticker, "[^-]+")) %>%   # extract everything before first "-"
+    group_by(date, symbol) %>%
+    # get the contract with the highest open interest
+    filter(open_interest == max(open_interest), open_interest > 0) %>%
+    # aggregate returns by jamming together consecutive contracts for each symbol
+    group_by(symbol) %>%
+    mutate(
+      cum_return = 1 + cumsum(log_return),
+      cum_simp_return = cumprod(1 + simple_return)
+    )
 }
