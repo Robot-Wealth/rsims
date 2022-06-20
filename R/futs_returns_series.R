@@ -52,7 +52,7 @@ roll_on_dte <- function(contracts, roll_dte = 1, cost = 0) {
   contracts %>%
     # calculate returns separately for each contract (ticker)
     # do this first before we throw away any data based on dte
-    group_by(ticker) %>%
+    dplyr::group_by(ticker) %>%
     dplyr::arrange(date) %>%
     dplyr::mutate(
       log_return = log(close/dplyr::lag(close)),
@@ -63,16 +63,26 @@ roll_on_dte <- function(contracts, roll_dte = 1, cost = 0) {
     dplyr::mutate(symbol = stringr::str_extract(ticker, "[^-]+")) %>%   # extract everything before first "-"
     dplyr::group_by(date, symbol) %>%
     # when contracts$dte == roll_dte, sell the current contract at the close, and buy the next contract at the close
-    # that is, when dte == roll_dte, we get the return for the current expiry, and on the next day we get the return
-    # for the next expiry
-    dplyr::filter(dte <= roll_dte) %>%
-    # deduct cost on roll day
+    # that is, when dte == roll_dte, we get the return for the current expiry, and on the next day we get the return for the next expiry
+    # current contract is the one with the minimum dte that is >= roll_dte
+    # filter current contract in several steps for clarity
+    filter(dte >= roll_dte) %>%
+    mutate(current_contract = case_when(dte == min(dte) ~ TRUE, TRUE ~ FALSE)) %>%
+    # also calculate a costs column here based on change in current contract by ticker (contract, not symbol)
+    group_by(ticker) %>%
+    # TODO: this will fail when we roll into a contract on its first day of existence
+      # ie lag(current_contract) won't be false... it'll be NA
+    mutate(was_current_contract = case_when(dplyr::lag(current_contract) == TRUE ~ TRUE, TRUE ~ FALSE)) %>%
+    mutate(roll_cost = case_when(current_contract == TRUE & (was_current_contract == FALSE | is.na(was_current_contract)) ~ cost, TRUE ~ 0)) %>%
+    filter(current_contract == TRUE) %>%
+    select(-current_contract) %>%
     dplyr::mutate(
-      log_return = dplyr::case_when(dte == roll_dte ~ log_return - cost, TRUE ~ log_return),
-      simple_return = dplyr::case_when(dte == roll_dte ~ simple_return - cost, TRUE ~ simple_return)
-      )
+      log_return = log_return - cost,
+      simple_return = simple_return - cost
+      ) %>%
     # aggregate returns by jamming together consecutive contracts for each symbol
-    dplyr::group_by(symbol) %>%
+    # aggregate returns by symbol
+    group_by(symbol) %>%
     dplyr::mutate(
       cum_return = 1 + cumsum(log_return),
       cum_simp_return = cumprod(1 + simple_return)
