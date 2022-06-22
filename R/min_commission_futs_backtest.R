@@ -1,5 +1,6 @@
 # TODO:
   # handle upstream: create futures price series from a particular roll approach
+  # need a dataframe of positions by ticker, where ticker is a contract
   # OR load contracts and roll within backtest loop... will be slower...
   # first approach more in line with rsims approach of calculating trades upstream of backtest loop
   # include roll in simulated trades by flagging roll dates
@@ -8,6 +9,21 @@
   # min commission model for futures trading: assume we using raw prices, ie not continuous contract which would require passing adjusted and unadjusted price - commission_fun(trades, current_price, ...)
   # function for calculating futs positions from no trade buffer and min commission - can we use the share-based one?? futsPositionsFromNoTradeBufferMinComm(contract_pos, current_price, current_weights, cap_equity, trade_buffer)
   # function for including interest accrued: maybe pass a matrix of STIRs or calculate upstream
+
+# function for mapping symbol (GC, ES etc) / date / position to contract/date/position
+# where we are in a position for a symbol, figure out which contract we should be in
+# do it based on open interest
+# pos <- data.frame(
+#   date = c("2021-01-04", "2021-01-04", "2021-01-05", "2021-01-05", "2021-01-06", "2021-01-06", "2021-01-07", "2021-01-07", "2021-01-08", "2021-01-08"),
+#   symbol = rep(c("GC", "ES"), 5),
+#   position = c(1, 0, 1, 0, 1, 0, 0, 1, 0, 1)
+# )
+# contracts <- futures %>% select(ticker, date, close, open_interest) %>% dplyr::mutate(symbol = stringr::str_extract(ticker, "[^-]+"))
+#
+# get_contract_positions <- function(symbol_positions, contracts) {
+#
+# }
+
 
 
 #' Futures Backtest, roll on days to expiry, minimum commission model
