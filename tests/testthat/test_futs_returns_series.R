@@ -169,6 +169,27 @@ test_that("roll_on_dte returns are correct with costs for roll_dte > 1", {
 
 # tests for roll_on_oi ----------------------------------------------------
 
+test_that("roll_on_oi errors on missing ticker column", {
+  futures <- readRDS(test_path("fixtures", "futures.rds"))
+  futures <- dplyr::rename(futures, "TICKER" = ticker)
+
+  expect_error(roll_on_oi(futures), "ticker column must exist")
+})
+
+test_that("roll_on_oi errors on missing close column", {
+  futures <- readRDS(test_path("fixtures", "futures.rds"))
+  futures <- dplyr::rename(futures, "CLOSE" = close)
+
+  expect_error(roll_on_oi(futures), "close column must exist")
+})
+
+test_that("roll_on_oi errors on missing open_interest column", {
+  futures <- readRDS(test_path("fixtures", "futures.rds"))
+  futures <- dplyr::rename(futures, "OPEN_INTEREST" = open_interest)
+
+  expect_error(roll_on_oi(futures), "open_interest column must exist")
+})
+
 test_that("roll_on_oi returns are correct without costs", {
   futures <- readRDS(test_path("fixtures", "futures.rds"))
 
@@ -248,23 +269,3 @@ test_that("roll_on_oi errors on incorrect date column", {
   expect_error(roll_on_oi(futures), "date column must exist and be of type Date")
 })
 
-test_that("roll_on_oi errors on missing ticker column", {
-  futures <- readRDS(test_path("fixtures", "futures.rds"))
-  futures <- dplyr::rename(futures, "TICKER" = ticker)
-
-  expect_error(roll_on_oi(futures), "ticker column must exist")
-})
-
-test_that("roll_on_oi errors on missing close column", {
-  futures <- readRDS(test_path("fixtures", "futures.rds"))
-  futures <- dplyr::rename(futures, "CLOSE" = close)
-
-  expect_error(roll_on_oi(futures), "close column must exist")
-})
-
-test_that("roll_on_oi errors on missing open_interest column", {
-  futures <- readRDS(test_path("fixtures", "futures.rds"))
-  futures <- dplyr::rename(futures, "OPEN_INTEREST" = open_interest)
-
-  expect_error(roll_on_oi(futures), "open_interest column must exist")
-})
