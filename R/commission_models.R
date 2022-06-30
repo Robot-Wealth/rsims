@@ -41,5 +41,25 @@ us_tiered_commission <- function(shares_traded, prices, unadjprices, max_pct_per
   commissions
 }
 
-
+# IB futures costs
+# Lowest tier: 0.85/contract, 0.25/micro-contract
+# Interest earned: BM-0.5% (currently 1.08%)
+#' Per-Contract Futures Commissions
+#'
+#' @description Calculates commission on number of contracts traded given a per-
+#' contract commission structure.
+#'
+#' @param contracts_traded vector of number of contracts traded per symbol
+#' @param per_contract_commission vector of per-contract commission per symbol
+#'
+#' @return vector of commissions paid per symbol
+#' @export
+#'
+#' @examples
+#' contracts_traded <- c("ES" = 5, "GC" = -2)
+#' per_contract_commission <- c("ES" = 0.85, "GC" = 0.5)
+#' futs_per_contract_commission(contracts_traded, per_contract_commission)
+futs_per_contract_commission <- function(contracts_traded, per_contract_commission) {
+  abs(contracts_traded)*per_contract_commission
+}
 
