@@ -111,6 +111,10 @@ make_sim_weights_matrix <- function(weights) {
     data.matrix()
 }
 
+roll <- function(rolls, current_pos) {
+
+}
+
 # roll looks like this:
 # cover current position in previous_contract
 # put on target weight in current_contract
@@ -130,6 +134,10 @@ make_sim_weights_matrix <- function(weights) {
 # include this in description
 
 # TODO: currently we treat margin as the same for all products... could rejig this so that we have per-contract margin
+
+# TODO: describe the flow of the event loop and sequence of events
+
+# TODO: describe process of aligning wights and prices - should be row-aligned with the prices you trade into the weights at - means you need to lag your weights upstream.
 
 
 #' Futures Backtest, roll on days to expiry, minimum commission model
@@ -190,27 +198,41 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
   investable_cash <- initial_cash  # used to enable capitalisation of positions with accrued cash
   previous_weights <- rep(0, num_assets)
   previous_price <- rep(NA, num_assets)
+  previous_roll_price <- rep(NA, num_assets)
 
   # Iterate through prices and backtest
   for (i in 1:(nrow(target_weights))) {
     current_date <- target_weights[i, 1]  # date will be a numeric from origin
     current_price <- prices[i, c(2:(2+num_assets-1))]
+    current_roll_price <- prices[i, c((2+num_assets):(2+2*num_assets-1))]  # prices of contract rolled out of today
+    roll <- prices[i, c((2+2*num_assets):(2+3*num_assets-1))]
     current_weights <- target_weights[i, -1]
     current_interest_rate <- interest_rates[i, -1]
 
-    # calculate cash settled at today's close based on yesterday's positions
-    settled_cash <- contract_pos * (current_price - previous_price)
+    # calculate cash settled at today's close based on yesterday's positions and if we roll
+
+    # get number of contracts to roll out of
+    roll_contracts <- ifelse(roll == 0, 0, -contract_pos)
+    roll_commissions <- commission_fun(roll_contracts, ...)
+    # cash settled on contracts rolled out of
+    settled_cash <- ifelse(roll_contracts == 0, contract_pos * (current_price - previous_price), contract_pos * (current_roll_price - previous_roll_price))
     settled_cash <- ifelse(is.na(settled_cash), 0, settled_cash)
+
+    # if we rolled, adjust contract_pos to zero - will trade into target weights later
+    contract_pos <- ifelse(roll_contracts == 0, contract_pos, 0)
+
+    # if we rolled, we freed up some margin
+    freed_margin <- ifelse(roll_contracts == 0, 0, abs(roll_contracts)*current_roll_price*margin)
 
     # calculate interest paid on yesterday's cash
     interest <- current_interest_rate * Cash
 
     # update cash balance
-    Cash <- Cash + sum(settled_cash) + interest
+    Cash <- Cash + sum(settled_cash) + interest + sum(freed_margin) - sum(roll_commissions)
 
     # check margin requirements
     # TODO: assumption: each contract has same maintenance margin requirements
-    contract_value <- contract_pos * current_price
+    contract_value <- contract_pos * current_price  # contract_pos is zero here for anything we rolled out of today
     maint_margin <- margin * sum(abs(contract_value))
 
     # force reduce position if exceeds maintenance margin requirements
@@ -262,6 +284,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
       # need to account for net margin usage from rolling (some margin freed, then used again)
       # can get all the accounting stuff in the backtest loop, and do the actual roll in the function
       # maybe in results df we have extra columns: roll (bool), covered_pos (num contracts covered), covered_price, roll_commission
+
     target_contracts <- positionsFromNoTradeBuffer(contract_pos, current_price, current_weights, investable_cash, trade_buffer)
 
     trades <- target_contracts - contract_pos
@@ -333,18 +356,19 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
         c(0, settled_cash),
         c(0, trades - liq_contracts),  # minus because we keep sign of original position in liq_contracts
         c(-sum(tradevalue, -liq_tradevalue), tradevalue-liq_tradevalue),
-        c(0, commissions + liq_commissions),
+        c(0, roll_contracts),
+        c(0, commissions + liq_commissions + roll_commissions),
         rep(margin_call, num_assets+1),   # bool will be stored as int (1-0)
         rep(reduced_target_pos, num_assets+1)
       ),
       nrow = num_assets + 1,
-      ncol = 11,
+      ncol = 12,
       byrow = FALSE,
       dimnames = list(
         # symbols are row names
         c("Cash", symbols),
         # column names
-        c("date", "close", "contracts", "exposure", "margin", "settledcash", "contracttrades", "tradevalue", "commission", "margin_call", "reduced_target_pos")
+        c("date", "close", "contracts", "exposure", "margin", "settledcash", "contracttrades", "tradevalue", "rolled_contracts", "commission", "margin_call", "reduced_target_pos")
       )
     )
 
@@ -352,6 +376,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
 
     previous_weights <- current_weights
     previous_price <- current_price
+    previous_roll_price <- current_roll_price
   }
 
   # Combine list of matrixes into dataframe

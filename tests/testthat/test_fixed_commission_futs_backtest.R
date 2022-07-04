@@ -59,4 +59,8 @@ results %>%
     geom_line()
 
 
-# test that margin is never negative
+# test that
+  # margin is never negative
+  # fails when data is misaligned
+  # rolls on correct day, rolls correct amount
+  # maybe do a 1- or 2-row backtest and ensure correct results
