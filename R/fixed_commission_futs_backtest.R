@@ -1,24 +1,6 @@
 # TODO:
-  # write a vignette describing the flow:
-    # wrangle contracts data into a df that you can look at and reason about
-    # convert that to a numerical matrix for simulation
-    # do the simulation
-    # describe how the roll is handled and trade logic
-  # handle upstream: create futures price series from a particular roll approach
-  # need a dataframe of positions by ticker, where ticker is a contract
-  # OR load contracts and roll within backtest loop... will be slower...
-  # first approach more in line with rsims approach of calculating trades upstream of backtest loop
-  # include roll in simulated trades by flagging roll dates
-  # function for checking matrix inputs are at least the correct type
-  # function for converting standard df to matrix with correct columns
-  # min commission model for futures trading: assume we using raw prices, ie not continuous contract which would require passing adjusted and unadjusted price - commission_fun(trades, current_price, ...)
-  # function for calculating futs positions from no trade buffer and min commission - can we use the share-based one?? futsPositionsFromNoTradeBufferMinComm(contract_pos, current_price, current_weights, cap_equity, trade_buffer)
-  # function for including interest accrued: maybe pass a matrix of STIRs or calculate upstream
-
-
-# TODO:
   # test this function using example data below, plus another edge case
-  # document: # wrangle contract data into format for backtest using open interest
+  # document: wrangle contract data into format for backtest using open interest
   # describe contracts data: needs ticker, date, price, open_interest, point_value
   # if we want to do per-contract margin, would include it here
   # describe output - prices converted to point values
@@ -79,13 +61,14 @@ wrangle_contracts_on_oi <- function(contracts) {
       TRUE ~ TRUE))
 }
 
-# transforms a wrangled contracts dataframe into a numerical matrix format for rsims simulation
-# gives one wide matrix with three columns per symbol
-# columns are suffixed with symbol
-# Other approaches:
-  # one matrix per symbol: adds complexity, reduces performance in backtest loop, but may make backtest easier to reason about
-  # long dataframe rather than numerical matrix: make backtest very easy to reason about, but pay a big penalty in performance
-  # what do we care about most? needs to be fast enough to be useful (long dataframes probably won't be), ideally would be easier to reason about simulation... but the data prep phase kinda takes care of that...
+# TODO:
+  # document: transforms a wrangled contracts dataframe into a numerical matrix format for rsims simulation
+  # gives one wide matrix with three columns per symbol
+  # columns are suffixed with symbol
+  # Other approaches:
+    # one matrix per symbol: adds complexity, reduces performance in backtest loop, but may make backtest easier to reason about
+    # long dataframe rather than numerical matrix: make backtest very easy to reason about, but pay a big penalty in performance
+    # what do we care about most? needs to be fast enough to be useful (long dataframes probably won't be), ideally would be easier to reason about simulation... but the data prep phase kinda takes care of that...
 make_sim_prices_matrix <- function(wrangled_contracts) {
   wrangled_contracts %>%
     dplyr::select(symbol, date, close_current_contract, close_previous_contract, roll) %>%
@@ -98,8 +81,9 @@ make_sim_prices_matrix <- function(wrangled_contracts) {
     data.matrix()
 }
 
-# takes a long dataframe of date, symbol, target weights
-# returns wide matrix of date, symbol where the values of symbol are the target weights
+# TODO:
+  # document: takes a long dataframe of date, symbol, target weights
+  # returns wide matrix of date, symbol where the values of symbol are the target weights
 make_sim_weights_matrix <- function(weights) {
   weights %>%
     dplyr::select(symbol, date, target_weight) %>%
@@ -115,17 +99,15 @@ roll <- function(rolls, current_pos) {
 
 }
 
-# roll looks like this:
-# cover current position in previous_contract
-# put on target weight in current_contract
 
-# each day check if we roll a contract and have a change in position:
-# if we roll do the roll trades so that you're back to the ideal weight
-# if we don't roll, only do the trades back to the trade buffer
-
-# remember: dates are aligned such that prices are prices at which we trade into target weights
-
-# fixed per-contract commission... so optimal thing is to rebal back to boundary
+# TODO:
+# write a vignette describing the flow:
+# describe the flow of the event loop and sequence of events
+# wrangle contracts data into a df that you can look at and reason about
+# convert that to a numerical matrix for simulation
+# do the simulation
+# describe how the roll is handled and trade logic
+# fail if prices columns aren't in correct order: current prices, roll prices, roll bool
 
 # TODO: maybe rename this to futs_backtest and handle different approaches via the
 # commission model passed. eg if commission_fun == x, rebal back to ideal
@@ -134,14 +116,24 @@ roll <- function(rolls, current_pos) {
 # include this in description
 
 # TODO: currently we treat margin as the same for all products... could rejig this so that we have per-contract margin
-
-# TODO: describe the flow of the event loop and sequence of events
-
-# TODO: describe process of aligning wights and prices - should be row-aligned with the prices you trade into the weights at - means you need to lag your weights upstream.
+# TODO: describe process of aligning wights and prices - should be row-aligned with the prices you trade into the weights at - means you need to lag your weights upstream. remember: dates are aligned such that prices are prices at which we trade into target weights
 
 # TODO: describe philosophy: backtesting function is quite opinionated wrt the data that you give it. But if you put the time in to
 # wrangling your data as it expects (there are functions to help with this), you get the benefit of extremely efficient backtesting code.
 
+# describe how it force liquidates you down to your margin requirements and won't let you put on positions that your
+# broker rejects.
+
+# explain how target weights need to include leverage (ie embed leverage in weights)
+
+# TODO: test huge leverage and try to get rekt... cash should get down to zero but no lower
+# conditions that get us rekt
+
+# TODO: document better - needs updated params, updated output df including columns and what they mean
+# specify that values in results df are at the end of the period
+
+# TODO: futures post processing stuff: NAV = Cash + margin used in existing postions
+# mention that we assume we can trade fractional contracts... may want to fix this
 
 #' Futures Backtest, roll on days to expiry, minimum commission model
 #'
@@ -150,6 +142,7 @@ roll <- function(rolls, current_pos) {
 #'
 #' Won't allow you to put on a position that would be rejected by the broker given
 #' user-supplied margin requirements. Positions that would be rejected are automatically scaled back.
+#'
 #'
 #' @param prices Matrix of trade prices. Column 1 must be the timestamp or
 #' index. Column 2 must be days-to-expiry.
@@ -226,7 +219,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
     current_date <- target_weights[i, 1]  # date will be a numeric from origin
     current_price <- prices[i, c(2:(2+num_assets-1))]
     current_roll_price <- prices[i, c((2+num_assets):(2+2*num_assets-1))]  # prices of contract rolled out of today
-    roll <- prices[i, c((2+2*num_assets):(2+3*num_assets-1))]
+    roll <- prices[i, c((2+2*num_assets):(2+3*num_assets-1))]  # 0 or 1 designating whether we rolled or not
     current_weights <- target_weights[i, -1]
     current_interest_rate <- interest_rates[i, -1]
 
@@ -236,7 +229,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
     roll_contracts <- ifelse(roll == 0, 0, -contract_pos)
     roll_commissions <- commission_fun(roll_contracts, ...)
     # cash settled on contracts rolled out of
-    settled_cash <- ifelse(roll_contracts == 0, contract_pos * (current_price - previous_price), contract_pos * (current_roll_price - previous_roll_price))
+    settled_cash <- ifelse(roll_contracts == 0, contract_pos * (current_price - previous_price), contract_pos * (current_roll_price - previous_roll_price))  # previous_roll_price will be previous_price unless we rolled yesterday too
     settled_cash <- ifelse(is.na(settled_cash), 0, settled_cash)
 
     # if we rolled, adjust contract_pos to zero - will trade into target weights later
@@ -260,18 +253,21 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
     margin_call <- FALSE
     liq_contracts <- rep(0, num_assets)
     liq_commissions <- rep(0, num_assets)
-    liq_tradevalue <- rep(0, num_assets)
-    if(Cash < maint_margin) {
+    liq_trade_value <- rep(0, num_assets)
+    if(Cash < 0) {
       margin_call <- TRUE
 
       # liquidate equal proportions of each contract holding
       # liquidate 5% extra to requirement for bringing maint_margin into line with cash
-      liquidate_factor <- 1.05*(maint_margin - Cash)/maint_margin
+      liquidate_factor <- 1.05*(maint_margin + Cash)/maint_margin
 
       # liquidate equal proportions of each contract (probably not how broker would actually do it)
       # but only liquidate a maximum amount of existing positions
-      liq_contracts <- sign(contract_pos) * liquidate_factor * pmax(abs(contract_pos), rep(0, num_assets))  # to account for possible short positions
-      liq_tradevalue <- liq_contracts*current_price
+      liq_contracts <- pmax(
+        sign(contract_pos) * liquidate_factor * abs(contract_pos),
+        sign(contract_pos) * abs(contract_pos)
+      ) # sign() to account for possible short positions
+      liq_trade_value <- liq_contracts*current_price
       liq_commissions <- commission_fun(liq_contracts, ...)
 
       # account for freed margin
@@ -293,23 +289,11 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
       investable_cash <- initial_cash  # if we're not capitalising profits and we're in the black, invest our initial cash
     }
 
-    # Update target contracts based on signal
-    # TODO: this doesn't factor trading required for the roll yet...
-    # target_contracts <- futsPositionsFromNoTradeBuffer(contract_pos, current_price, current_weights, investable_cash, trade_buffer)
-    # write function that checks if we roll for each instrument
-    # if we do:
-      # cover at close previous contract
-      # open at close next contract at target weight
-      # return target contracts and number of rolled contracts - use to calculate commission costs
-      # need to change the current_price for the thing we rolled into
-      # need to account for net margin usage from rolling (some margin freed, then used again)
-      # can get all the accounting stuff in the backtest loop, and do the actual roll in the function
-      # maybe in results df we have extra columns: roll (bool), covered_pos (num contracts covered), covered_price, roll_commission
-
+    # Update target contracts based on target weights, current weights and trade buffer
     target_contracts <- positionsFromNoTradeBuffer(contract_pos, current_price, current_weights, investable_cash, trade_buffer)
 
     trades <- target_contracts - contract_pos
-    tradevalue <- trades * current_price
+    trade_value <- trades * current_price
 
     commissions <- commission_fun(trades, ...)
 
@@ -331,7 +315,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
       # ensure doesn't change sign from intended, but we only reduce target contracts no further than zero
       target_contracts <- sign(target_contracts) * reduce_by * pmax(abs(target_contracts), rep(0, num_assets))
       trades <- target_contracts - contract_pos
-      tradevalue <- trades * current_price
+      trade_value <- trades * current_price
       commissions <- commission_fun(trades, ...)
 
       contract_pos <- target_contracts
@@ -346,7 +330,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
     Cash <- post_trade_cash
     maint_margin <- margin*sum(abs(contract_value))
 
-    # TODO: up to here... what are the conditions that get us rekt in this case?
+    # TODO: what are the conditions that get us rekt in this case?
     # run out of cash, even after being liquidated, not enough cash to open a position
     # if we get margin called, we get liquidated... not necessarily complete rekt
     # but if Cash goes negative or hits zero after being liquidated, we're rekt
@@ -373,23 +357,25 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
         c(0, current_price),
         c(0, contract_pos),
         c(Cash, contract_value),
-        c(0, margin*contract_value),
+        c(0, margin*abs(contract_value)),
+        c(interest, rep(0, num_assets)),
         c(0, settled_cash),
         c(0, trades - liq_contracts),  # minus because we keep sign of original position in liq_contracts
-        c(-sum(tradevalue, -liq_tradevalue), tradevalue-liq_tradevalue),
+        c(-sum(trade_value, -liq_trade_value), trade_value-liq_trade_value),
         c(0, roll_contracts),
+        c(NA, ifelse(roll_contracts == 0, NA, current_roll_price)),
         c(0, commissions + liq_commissions + roll_commissions),
         rep(margin_call, num_assets+1),   # bool will be stored as int (1-0)
         rep(reduced_target_pos, num_assets+1)
       ),
       nrow = num_assets + 1,
-      ncol = 12,
+      ncol = 14,
       byrow = FALSE,
       dimnames = list(
         # symbols are row names
         c("Cash", symbols),
         # column names
-        c("date", "close", "contracts", "exposure", "margin", "settledcash", "contracttrades", "tradevalue", "rolled_contracts", "commission", "margin_call", "reduced_target_pos")
+        c("date", "close", "contracts", "exposure", "margin", "interest", "settledcash", "contract_trades", "trade_value", "rolled_contracts", "roll_price", "commission", "margin_call", "reduced_target_pos")
       )
     )
 
@@ -402,7 +388,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
 
   # Combine list of matrixes into dataframe
   do.call(rbind, rowlist) %>%
-    tibble::as_tibble(rownames = "symbols") %>%
+    tibble::as_tibble(rownames = "symbol") %>%
     dplyr::mutate(
       date = as.Date(date, origin ="1970-01-01"),
       margin_call = dplyr::if_else(margin_call != 0, TRUE, FALSE),
