@@ -139,6 +139,9 @@ roll <- function(rolls, current_pos) {
 
 # TODO: describe process of aligning wights and prices - should be row-aligned with the prices you trade into the weights at - means you need to lag your weights upstream.
 
+# TODO: describe philosophy: backtesting function is quite opinionated wrt the data that you give it. But if you put the time in to
+# wrangling your data as it expects (there are functions to help with this), you get the benefit of extremely efficient backtesting code.
+
 
 #' Futures Backtest, roll on days to expiry, minimum commission model
 #'
@@ -170,25 +173,43 @@ roll <- function(rolls, current_pos) {
 #' @examples
 #' @export
 fixed_commission_futs_backtest <- function(prices, target_weights, interest_rates, trade_buffer = 0., initial_cash = 10000, margin = 0.05, capitalise_profits = FALSE, commission_fun, ...) {
+  num_assets <- ncol(target_weights) - 1
+  symbols <- colnames(target_weights)[-1]
 
   if(trade_buffer < 0)
     stop("trade_buffer must be greater than or equal to zero")
 
   misaligned_timestamps <- which(prices[, 1] != target_weights[, 1])
   if(length(misaligned_timestamps) > 0)
-    stop(glue::glue("Misaligned timestamps at indexes {misaligned_timestamps}"))
+    stop(glue::glue("Timestamps of prices and weights matrixes are misaligned"))
 
-  # TODO check column order matches in prices and target_weights
-  # eg colnames(prices)[2:(2+num_assets-1)] should regex match symbols from colnames(target_weights)
+  misaligned_timestamps <- which(prices[, 1] != interest_rates[, 1])
+  if(length(misaligned_timestamps) > 0)
+    stop(glue::glue("Timestamps of prices and rates matrixes are misaligned"))
 
-  if(! c(substitute(commission_fun)) %in% c("futs_per_contract_commission"))
-    stop(glue::glue("{substitute(commission_fun)} not yet implemented."))
+  # check column order matches in prices and target_weights
+  prices_cols <- colnames(prices)[2:(num_assets+1)] %>% stringr::str_remove("close_current_contract_")
+  if(! all(prices_cols == symbols))
+      stop("Asset-wise column order mismatch in prices and weights matrixes")
 
-  # TODO: check that ... corresponds to correct args for commission function
+  # commission_fun should be one of the fixed commission models - not a minimum
+  # commission model (trade calculation function is based on a fixed comm model)
+  if(! c(substitute(commission_fun)) %in% c("futs_per_contract_commission", "fixed_percent"))
+    stop("Commission function not yet implemented - choose futs_per_contract_commission or fixed_percent.")
+
+  # check that ... corresponds to correct args for commission function
+  if(substitute(commission_fun) == "futs_per_contract_commission") {
+    args <- list(...)
+
+    if(!"per_contract_commission" %in% names(args) || length(args) != 1)
+      stop("Wrong arguments specified. futs_per_contract_commission requires 1 argument, per_contract_commission")
+
+    # check that per_contract_commission is a correctly named vector
+    if(length(args$per_contract_commission) != num_assets || any(names(args$per_contract_commission) != symbols))
+      stop("per_contract_commission must be a named vector whose names correspond to the contract symbols in target_weights")
+  }
     # for futs_per_contract_commission, ... should be per_contract_commission
-
-  num_assets <- ncol(target_weights) - 1
-  symbols <- colnames(target_weights)[-1]
+    # and per_contract_commission needs to be a named vector corresponding to column-order of prices matrix
 
   rowlist <- vector(mode = "list", length = nrow(target_weights))  # preallocate list to store daily backtest data
 
