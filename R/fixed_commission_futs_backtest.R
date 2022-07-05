@@ -1,10 +1,3 @@
-  # example:
-    # this will cause roll to show up the day after something is identified as having max OI
-    # eg GC:
-    # 2021-01-15 G has highest OI
-    # 2021-01-19 J has highest OI (no trading 16-19)
-    # 2021-01-20 we roll into J (previous_contract and close_previous_contract correspond to G, current to J)
-
 #' Wrangle Futures Contracts for Simulation using Open Interest
 #'
 #' @description This is a helper function for determining when to roll futures
