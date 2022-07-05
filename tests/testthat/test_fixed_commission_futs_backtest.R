@@ -576,7 +576,7 @@ test_that("Cash accounting accuracy is within acceptable tolerance", {
   wrangled <- wrangle_contracts_on_oi(futures)
   sim_prices <- make_sim_prices_matrix(wrangled)
 
-  # example data: insanely leveraged short ES
+  # example data: equal weight
   target_weights <- data.frame(
     date = wrangled$date,
     symbol = wrangled$symbol,
