@@ -1,8 +1,3 @@
-# TODO:
-  # test that margin is freed and applied correctly around the roll and around regular trading
-  # test that we rebalance back to the trade buffer correctly
-  # test insane leverage - should go to zero but no lower
-
 test_that("Misaligned prices and weights timestamps causes error", {
   futures <- readRDS(test_path("fixtures", "futures.rds"))
   wrangled <- wrangle_contracts_on_oi(futures)
@@ -85,6 +80,41 @@ test_that("Misaligned prices and rates timestamps causes error", {
   )
 })
 
+test_that("Contracts are traded only in integer amounts", {
+  futures <- readRDS(test_path("fixtures", "futures.rds"))
+  wrangled <- wrangle_contracts_on_oi(futures)
+  sim_prices <- make_sim_prices_matrix(wrangled)
+
+  # example data: equal dollar weight in ES/GC/ZB
+  target_weights <- data.frame(
+    date = wrangled$date,
+    symbol = wrangled$symbol,
+    target_weight = 5*rep(1./3, nrow(wrangled))
+  ) %>%
+    make_sim_weights_matrix()
+
+  # example interest rate data
+  broker_spread <- 0.005
+  rates <- data.frame(
+    date = sort(unique(wrangled$date)),
+    rate = rep((0.05 - broker_spread)/365, nrow(wrangled))
+  ) %>%
+    data.matrix()
+
+  results <- fixed_commission_futs_backtest(
+      prices = sim_prices,
+      target_weights = target_weights,
+      interest_rates = rates,
+      trade_buffer = 0.20,
+      initial_cash = 1000000,
+      margin = 0.05,
+      capitalise_profits = TRUE,
+      commission_fun = futs_per_contract_commission,
+      per_contract_commission = c("ES" = 0.85, "GC" = 0.85, "ZB" = 0.85)
+    )
+  expect_true(all(results$contracts == as.integer(results$contracts)))
+})
+
 test_that("Margin is never negative", {
   futures <- readRDS(test_path("fixtures", "futures.rds"))
   wrangled <- wrangle_contracts_on_oi(futures)
@@ -107,16 +137,16 @@ test_that("Margin is never negative", {
     data.matrix()
 
   results <- fixed_commission_futs_backtest(
-      prices = sim_prices,
-      target_weights = target_weights,
-      interest_rates = rates,
-      trade_buffer = 0.20,
-      initial_cash = 100000,
-      margin = 0.05,
-      capitalise_profits = TRUE,
-      commission_fun = futs_per_contract_commission,
-      per_contract_commission = c("ES" = 0.85, "GC" = 0.85, "ZB" = 0.85)
-    )
+    prices = sim_prices,
+    target_weights = target_weights,
+    interest_rates = rates,
+    trade_buffer = 0.20,
+    initial_cash = 100000,
+    margin = 0.05,
+    capitalise_profits = TRUE,
+    commission_fun = futs_per_contract_commission,
+    per_contract_commission = c("ES" = 0.85, "GC" = 0.85, "ZB" = 0.85)
+  )
   expect_true(all(results$margin >= 0))
 
 })
@@ -342,7 +372,7 @@ test_that("Roll happens on correct day at correct prices with correct commission
   target_weights <- data.frame(
     date = wrangled$date,
     symbol = wrangled$symbol,
-    target_weight = rep(1./3, nrow(wrangled))
+    target_weight = 5*rep(1./3, nrow(wrangled))
   ) %>%
     make_sim_weights_matrix()
 
@@ -361,7 +391,7 @@ test_that("Roll happens on correct day at correct prices with correct commission
       target_weights = target_weights,
       interest_rates = rates,
       trade_buffer = 0.20,
-      initial_cash = 100000,
+      initial_cash = 1000000,
       margin = 0.05,
       capitalise_profits = TRUE,
       commission_fun = futs_per_contract_commission,
@@ -380,8 +410,7 @@ test_that("Roll happens on correct day at correct prices with correct commission
   ))
 })
 
-# TODO.. well, it won't necessarily blow up the account as we keep force reducing the positions we can put on...
-test_that("Insane leverage blows up account", {
+test_that("Insanely leveraged short stock index loses money and eventually can't trade anymore", {
   futures <- readRDS(test_path("fixtures", "futures.rds"))
   wrangled <- wrangle_contracts_on_oi(futures)
   sim_prices <- make_sim_prices_matrix(wrangled)
@@ -408,12 +437,203 @@ test_that("Insane leverage blows up account", {
     prices = sim_prices,
     target_weights = target_weights,
     interest_rates = rates,
-    trade_buffer = 0.20,
-    initial_cash = 100000,
+    trade_buffer = 0.0,
+    initial_cash = 1000000,
     margin = 0.05,
     capitalise_profits = TRUE,
     commission_fun = futs_per_contract_commission,
     per_contract_commission = per_contract_commission
   )
+
+  # we should not hold any contracts at the end of the simulation
+  num_contracts_at_end <- results %>%
+    dplyr::group_by(date) %>%
+    dplyr::summarise(total_contracts = sum(contracts)) %>%
+    tail(1) %>%
+    dplyr::pull(total_contracts)
+  expected_num_contracts_at_end <- 0
+
+  # we should lose most of our money
+  nav_at_end <- results %>%
+    dplyr::group_by(date) %>%
+    dplyr::summarise(margin = sum(margin)) %>%
+    dplyr::left_join(
+      results %>% dplyr::select(date, symbol, exposure) %>% dplyr::filter(symbol == "Cash"),
+      by = "date"
+    ) %>%
+    dplyr::mutate(NAV = margin + exposure) %>%
+    tail(1) %>%
+    dplyr::pull(NAV)
+  expected_max_nav <- 15000
+
+  expect_true(all(
+    num_contracts_at_end == expected_num_contracts_at_end,
+    nav_at_end <= expected_max_nav
+  ))
+
+})
+
+test_that("Trade buffer set to zero produces correct rebalances", {
+  futures <- readRDS(test_path("fixtures", "futures.rds"))
+  wrangled <- wrangle_contracts_on_oi(futures)
+  sim_prices <- make_sim_prices_matrix(wrangled)
+
+  # example data: insanely leveraged short ES
+  target_weights <- data.frame(
+    date = wrangled$date,
+    symbol = wrangled$symbol,
+    target_weight = 5*rep(1./3, nrow(wrangled))
+  ) %>%
+    make_sim_weights_matrix()
+
+  # example interest rate data
+  broker_spread <- 0.005
+  rates <- data.frame(
+    date = sort(unique(wrangled$date)),
+    rate = rep((0.05 - broker_spread)/365, nrow(wrangled))
+  ) %>%
+    data.matrix()
+
+  per_contract_commission <- c("ES" = 0.85, "GC" = 0.85, "ZB" = 0.85)
+  margin <- 0.05
+  initial_cash <- 1000000
+
+  results <- fixed_commission_futs_backtest(
+    prices = sim_prices,
+    target_weights = target_weights,
+    interest_rates = rates,
+    trade_buffer = 0.0,
+    initial_cash = initial_cash,
+    margin = margin,
+    capitalise_profits = TRUE,
+    commission_fun = futs_per_contract_commission,
+    per_contract_commission = per_contract_commission
+  )
+
+  # expected contracts held on day 1 with zero trade buffer
+  num_contracts_zero_trade_buffer <- results %>%
+    head(4) %>%  # get rows for day 1 for each asset and cash
+    tail(3) %>%  # drop cash
+    dplyr::select(symbol, contracts) %>%
+    dplyr::pull(contracts, symbol)  # converts to named vector
+  expected_num_contracts_zero_trade_buffer <- trunc(target_weights[1, -1]*initial_cash/sim_prices[1, c(2:4)])
+
+  expect_equal(num_contracts_zero_trade_buffer, expected_num_contracts_zero_trade_buffer)
+})
+
+test_that("Non-zero trade buffer produces correct rebalances", {
+  futures <- readRDS(test_path("fixtures", "futures.rds"))
+  wrangled <- wrangle_contracts_on_oi(futures)
+  sim_prices <- make_sim_prices_matrix(wrangled)
+
+  # example data: insanely leveraged short ES
+  target_weights <- data.frame(
+    date = wrangled$date,
+    symbol = wrangled$symbol,
+    target_weight = 5*rep(1./3, nrow(wrangled))
+  ) %>%
+    make_sim_weights_matrix()
+
+  # example interest rate data
+  broker_spread <- 0.005
+  rates <- data.frame(
+    date = sort(unique(wrangled$date)),
+    rate = rep((0.05 - broker_spread)/365, nrow(wrangled))
+  ) %>%
+    data.matrix()
+
+  per_contract_commission <- c("ES" = 0.85, "GC" = 0.85, "ZB" = 0.85)
+  margin <- 0.05
+  initial_cash <- 1000000
+  trade_buffer <- 0.2
+
+  results <- fixed_commission_futs_backtest(
+    prices = sim_prices,
+    target_weights = target_weights,
+    interest_rates = rates,
+    trade_buffer = trade_buffer,
+    initial_cash = initial_cash,
+    margin = margin,
+    capitalise_profits = TRUE,
+    commission_fun = futs_per_contract_commission,
+    per_contract_commission = per_contract_commission
+  )
+
+  # expected contracts held on day 1 with non-zero trade buffer
+  num_contracts_non_zero_trade_buffer <- results %>%
+    head(4) %>%  # get rows for day 1 for each asset and cash
+    tail(3) %>%  # drop cash
+    dplyr::select(symbol, contracts) %>%
+    dplyr::pull(contracts, symbol)  # converts to named vector
+
+  expected_num_contracts_non_zero_trade_buffer <- trunc((target_weights[1, -1] - trade_buffer)*initial_cash/sim_prices[1, c(2:4)])
+
+  expect_equal(num_contracts_non_zero_trade_buffer, expected_num_contracts_non_zero_trade_buffer)
+})
+
+test_that("Cash accounting accuracy is within acceptable tolerance", {
+  futures <- readRDS(test_path("fixtures", "futures.rds"))
+  wrangled <- wrangle_contracts_on_oi(futures)
+  sim_prices <- make_sim_prices_matrix(wrangled)
+
+  # example data: insanely leveraged short ES
+  target_weights <- data.frame(
+    date = wrangled$date,
+    symbol = wrangled$symbol,
+    target_weight = 5*rep(1./3, nrow(wrangled))
+  ) %>%
+    make_sim_weights_matrix()
+
+  # example interest rate data
+  broker_spread <- 0.005
+  rates <- data.frame(
+    date = sort(unique(wrangled$date)),
+    rate = rep((0.05 - broker_spread)/365, nrow(wrangled))
+  ) %>%
+    data.matrix()
+
+  per_contract_commission <- c("ES" = 0.85, "GC" = 0.85, "ZB" = 0.85)
+  margin <- 0.05
+  initial_cash <- 1000000
+  trade_buffer <- 0.2
+
+  results <- fixed_commission_futs_backtest(
+    prices = sim_prices,
+    target_weights = target_weights,
+    interest_rates = rates,
+    trade_buffer = trade_buffer,
+    initial_cash = initial_cash,
+    margin = margin,
+    capitalise_profits = TRUE,
+    commission_fun = futs_per_contract_commission,
+    per_contract_commission = per_contract_commission
+  )
+
+  # Cash at T+1 should be equal to:
+  # cash_t0 + margin_t0 - margin_t1 + settled_cash_t1 - commission_t1 + interest_t1
+  reconciled_cash <- results %>%
+    dplyr::group_by(date) %>%
+    dplyr::summarise(
+      total_margin = sum(margin),
+      total_settled_cash = sum(settled_cash),
+      total_commission = sum(commission)
+    ) %>%
+    dplyr::left_join(results %>% dplyr::filter(symbol == "Cash"), by = "date") %>%
+    dplyr::select(date, exposure, total_margin, total_settled_cash, total_commission, exposure, interest) %>%
+    dplyr::mutate(
+      lag_cash = dplyr::lag(exposure),
+      lag_total_margin = dplyr::lag(total_margin)
+    ) %>%
+    dplyr::mutate(
+      lag_cash = replace(lag_cash, is.na(lag_cash), initial_cash),
+      lag_total_margin = replace(lag_total_margin, is.na(lag_total_margin), 0)
+    ) %>%
+    dplyr::mutate(expected_cash = lag_cash + lag_total_margin - total_margin + total_settled_cash - total_commission + interest) %>%
+    dplyr::mutate(
+      diff = expected_cash - exposure,
+      pct_diff = diff/exposure
+    )
+
+  expect_lte(max(abs(reconciled_cash$pct_diff)), 1e-6)
 
 })

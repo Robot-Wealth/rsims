@@ -213,6 +213,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
   previous_weights <- rep(0, num_assets)
   previous_price <- rep(NA, num_assets)
   previous_roll_price <- rep(NA, num_assets)
+  maint_margin <- 0
 
   # Iterate through prices and backtest
   for (i in 1:(nrow(target_weights))) {
@@ -236,15 +237,16 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
     contract_pos <- ifelse(roll_contracts == 0, contract_pos, 0)
 
     # if we rolled, we freed up some margin
-    freed_margin <- ifelse(roll_contracts == 0, 0, abs(roll_contracts)*current_roll_price*margin)
+    # freed_margin <- ifelse(roll_contracts == 0, 0, abs(roll_contracts)*current_roll_price*margin)
 
     # calculate interest paid on yesterday's cash
     interest <- current_interest_rate * Cash
 
-    # update cash balance
-    Cash <- Cash + sum(settled_cash) + interest + sum(freed_margin) - sum(roll_commissions)
+    # update cash balance - includes adding back yesterday's margin and deducting today's margin
+    # Cash <- Cash + sum(settled_cash) + interest + sum(freed_margin) - maint_margin - sum(roll_commissions)
+    Cash <- Cash + sum(settled_cash) + interest + maint_margin - margin*sum(abs(contract_pos)*current_price) - sum(roll_commissions)
 
-    # check margin requirements
+    # update margin requirements
     # TODO: assumption: each contract has same maintenance margin requirements
     contract_value <- contract_pos * current_price  # contract_pos is zero here for anything we rolled out of today
     maint_margin <- margin * sum(abs(contract_value))
@@ -264,18 +266,20 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
       # liquidate equal proportions of each contract (probably not how broker would actually do it)
       # but only liquidate a maximum amount of existing positions
       liq_contracts <- pmax(
-        sign(contract_pos) * liquidate_factor * abs(contract_pos),
+        trunc(sign(contract_pos) * liquidate_factor * abs(contract_pos)),  # trunc to deal in integer number of contracts
         sign(contract_pos) * abs(contract_pos)
       ) # sign() to account for possible short positions
       liq_trade_value <- liq_contracts*current_price
       liq_commissions <- commission_fun(liq_contracts, ...)
 
-      # account for freed margin
-      freed_margin <- margin*sum(abs(liq_contracts)*current_price)
-
-      Cash <- Cash + freed_margin - sum(liq_commissions)
       contract_pos <- contract_pos - liq_contracts
       contract_value <- contract_pos * current_price
+
+      # account for freed margin
+      # freed_margin <- margin*sum(abs(liq_contracts)*current_price)
+      # Cash <- Cash + freed_margin - sum(liq_commissions)
+      Cash <- Cash + maint_margin -margin*sum(abs(contract_value)) - sum(liq_commissions)
+
       maint_margin <- margin * sum(abs(contract_value))
     }
 
@@ -291,6 +295,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
 
     # Update target contracts based on target weights, current weights and trade buffer
     target_contracts <- positionsFromNoTradeBuffer(contract_pos, current_price, current_weights, investable_cash, trade_buffer)
+    target_contracts <- trunc(target_contracts)  # deal in integer number of contracts only
 
     trades <- target_contracts - contract_pos
     trade_value <- trades * current_price
@@ -313,7 +318,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
 
       reduce_by <-  max_post_trade_contracts_value/sum(abs(target_contract_value))
       # ensure doesn't change sign from intended, but we only reduce target contracts no further than zero
-      target_contracts <- sign(target_contracts) * reduce_by * pmax(abs(target_contracts), rep(0, num_assets))
+      target_contracts <- trunc(sign(target_contracts) * reduce_by * pmax(abs(target_contracts), rep(0, num_assets)))
       trades <- target_contracts - contract_pos
       trade_value <- trades * current_price
       commissions <- commission_fun(trades, ...)
@@ -375,7 +380,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
         # symbols are row names
         c("Cash", symbols),
         # column names
-        c("date", "close", "contracts", "exposure", "margin", "interest", "settledcash", "contract_trades", "trade_value", "rolled_contracts", "roll_price", "commission", "margin_call", "reduced_target_pos")
+        c("date", "close", "contracts", "exposure", "margin", "interest", "settled_cash", "contract_trades", "trade_value", "rolled_contracts", "roll_price", "commission", "margin_call", "reduced_target_pos")
       )
     )
 
