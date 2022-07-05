@@ -2,6 +2,15 @@
 
 Tools for financial simulation
 
+## Description
+
+Efficient quasi-event-driven backtesting functions with opinionated input requirements. 
+
+Designed according to the following philosophy:  
+- Prioritise backtesting efficiency 
+- Function inputs should be close to the natural outputs of the quant research process: dataframes/matrixes of prices and target weights.
+- Include helper functions for efficiently wrangling these research outputs into formats suitable for fast backtesting
+
 ## Install and load
 
 The easiest way to install and load `rsims` is using `pacman::p_load_current_gh` which wraps `devtools::install_github` and `require`:
@@ -10,37 +19,45 @@ The easiest way to install and load `rsims` is using `pacman::p_load_current_gh`
 
 ## Usage
 
-The key function is `cash_backtest`, an optimised event-driven backtesting function.
+Depends on application:
 
-`cash_backtest` simulates trading into a set of weights (calculated upstream) subject to transaction cost and other constraints.
+- `min_commission_backtest`: suitable for backtesting under the assumption of minimum commission, for instance many equities brokers.
+- `fixed_commission_backtest`: suitable for backtesting under the assumption of linear (fixed percentage) commission, for instance many crypto exchanges. 
+- `fixed_commission_futs_backtest`: suitable for backtesting expiring products under the assumption of linear (fixed percentage) commission, for instance CME futures. 
 
-It expects matrixes for `prices` and `theo_weights`, both with a timestamp as the first column and of the same dimensions. Further details in the function documentation.
+These functions are optimised for efficiency. They simulate trading into a set of weights (calculated upstream) subject to transaction cost and other constraints. They expect matrixes for prices and target weights. 
 
+Example usage:
 
 ```R
 library(rsims)
-results <- cash_backtest(prices, theo_weights, trade_buffer = 0., initial_cash = 10000, commission_pct = 0, capitalise_profits = FALSE)
+results <- min_commission_backtest(prices, theo_weights, trade_buffer = 0., initial_cash = 10000, commission_pct = 0, capitalise_profits = FALSE)
 ```
+Further details in the respective function documentation. 
+
+Examples of wrangling data for input to these functions can be found in the vignettes. 
 
 ## Approach to calculating position deltas
 
-Currently there is one module implemented for calculating position deltas: the "no-trade region" approach. See the examples for dteails on how this approach works, where it is reasonable, where it shouldn't be used. 
+Position deltas are calculated using the trade buffer approach. Positions are rebalanced once they deviate from their target by more than a user-supplied `trade_buffer`. Rebalancing happens slightly differently depending on the commission model used:  
+- for minimum commission backtesting, rebalance back to the target weight
+- for fixed commission backtesting, rebalance back to the target weight plus/minus the trade buffer
 
-The intent is to implement other approaches in the future, such as numerical optimisation of the return-risk-cost problem, subject to constraints.
+These are heuristic rules that are theoretically optimal give the different cost models. [Here's a good derivation from @macrocephalopod on Twitter.](https://twitter.com/macrocephalopod/status/1373236950728052736) 
+
+Other approaches to trade determination may be implemented in the future.
 
 ## Cost model
 
-Currently `rsims` implements a simplified "fixed percent of traded value" cost model. For some applications, market impact, spread, and commission might be reasonably represented by such a model. No attempt is made (yet) to explicitly account for these costs separately. Borrow, margin and funding costs are not yet implemented.
+Currently `rsims` implements simplified cost models that only include commission. For some applications, the various costs (market impact, spread, and commission) might be reasonably represented by such a model. No attempt is made (yet) to explicitly account for these costs separately. Borrow and funding costs are not yet implemented.
 
 ## Examples and vignettes
 
-### Wrangling data for input to `cash_backtest`
+TODO
 
-### Finding the historically sharpe-optimal trade buffer parameter
-Here's a good derivation from @macrocephalopod on Twitter: https://twitter.com/macrocephalopod/status/1373236950728052736
+### Backtesting ETF strategies with `min_commission_backtest`
 
-This leads to simple heuristic trading rule - which is theoretically optimal if your costs are linear and you don't mind holding exposures within a certain range.
+### Finding the historically sharpe-optimal trade buffer parameter for a crypto momentum strategy with `fixed_commission_backtest`
 
-It's not a good approach when your trading costs aren't approximately linear, for example, small trading with a fixed minimum commission per trade.
+### Backtesting CME futures with `fixed_commission_futs_backtest`
 
-### Lagging signal with respect to prices (lagging theo weights is equivalent)
