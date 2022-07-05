@@ -49,10 +49,22 @@
     <loc>/reference/costs_pct_profit.html</loc>
   </url>
   <url>
+    <loc>/reference/days_to_expiry.html</loc>
+  </url>
+  <url>
     <loc>/reference/fixed_commission_backtest.html</loc>
   </url>
   <url>
+    <loc>/reference/fixed_commission_futs_backtest.html</loc>
+  </url>
+  <url>
     <loc>/reference/fixed_percent.html</loc>
+  </url>
+  <url>
+    <loc>/reference/futs_backtest_equity.html</loc>
+  </url>
+  <url>
+    <loc>/reference/futs_per_contract_commission.html</loc>
   </url>
   <url>
     <loc>/reference/gg_colour_hue.html</loc>
@@ -73,6 +85,12 @@
     <loc>/reference/make_port_fill_scale.html</loc>
   </url>
   <url>
+    <loc>/reference/make_sim_prices_matrix.html</loc>
+  </url>
+  <url>
+    <loc>/reference/make_sim_weights_matrix.html</loc>
+  </url>
+  <url>
     <loc>/reference/min_commission_backtest.html</loc>
   </url>
   <url>
@@ -86,6 +104,12 @@
   </url>
   <url>
     <loc>/reference/positionsFromNoTradeBufferMinComm.html</loc>
+  </url>
+  <url>
+    <loc>/reference/roll_on_dte.html</loc>
+  </url>
+  <url>
+    <loc>/reference/roll_on_oi.html</loc>
   </url>
   <url>
     <loc>/reference/rolling_ann_port_perf.html</loc>
@@ -104,5 +128,8 @@
   </url>
   <url>
     <loc>/reference/us_tiered_commission.html</loc>
+  </url>
+  <url>
+    <loc>/reference/wrangle_contracts_on_oi.html</loc>
   </url>
 </urlset>

@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rsims</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.0.0.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.0.0</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -89,13 +89,29 @@ Follows renaming of original cash_backtest function to fixed_commission_backtest
         </td>
         <td><p>Calculate costs as percent of profits</p></td>
       </tr><tr><td>
+          <p><code><a href="days_to_expiry.html">days_to_expiry()</a></code> </p>
+        </td>
+        <td><p>Number of Days to Expiry</p></td>
+      </tr><tr><td>
           <p><code><a href="fixed_commission_backtest.html">fixed_commission_backtest()</a></code> </p>
         </td>
         <td><p>Fixed Commission Backtest</p></td>
       </tr><tr><td>
+          <p><code><a href="fixed_commission_futs_backtest.html">fixed_commission_futs_backtest()</a></code> </p>
+        </td>
+        <td><p>Futures Backtest, roll on days to expiry, fixed commission model</p></td>
+      </tr><tr><td>
           <p><code><a href="fixed_percent.html">fixed_percent()</a></code> </p>
         </td>
         <td><p>Fixed percent commission</p></td>
+      </tr><tr><td>
+          <p><code><a href="futs_backtest_equity.html">futs_backtest_equity()</a></code> </p>
+        </td>
+        <td><p>Calculate timeseries of end-of-day portfolio equity from futures backtest results.</p></td>
+      </tr><tr><td>
+          <p><code><a href="futs_per_contract_commission.html">futs_per_contract_commission()</a></code> </p>
+        </td>
+        <td><p>Per-Contract Futures Commissions</p></td>
       </tr><tr><td>
           <p><code><a href="gg_colour_hue.html">gg_colour_hue()</a></code> </p>
         </td>
@@ -117,6 +133,14 @@ Follows renaming of original cash_backtest function to fixed_commission_backtest
         </td>
         <td><p>Portfolio fill scale</p></td>
       </tr><tr><td>
+          <p><code><a href="make_sim_prices_matrix.html">make_sim_prices_matrix()</a></code> </p>
+        </td>
+        <td><p>Make Futures Simulation Prices Matrix</p></td>
+      </tr><tr><td>
+          <p><code><a href="make_sim_weights_matrix.html">make_sim_weights_matrix()</a></code> </p>
+        </td>
+        <td><p>Make Futures Simulation Weights Matrix</p></td>
+      </tr><tr><td>
           <p><code><a href="min_commission_backtest.html">min_commission_backtest()</a></code> </p>
         </td>
         <td><p>Equities Cash Accounting Backtest</p></td>
@@ -132,6 +156,14 @@ Follows renaming of original cash_backtest function to fixed_commission_backtest
           <p><code><a href="positionsFromNoTradeBufferMinComm.html">positionsFromNoTradeBufferMinComm()</a></code> </p>
         </td>
         <td><p>Calculate target positions from theoretical weights and trade buffer parameter in the presence of minimum commission</p></td>
+      </tr><tr><td>
+          <p><code><a href="roll_on_dte.html">roll_on_dte()</a></code> </p>
+        </td>
+        <td><p>Roll on Days to Expiry</p></td>
+      </tr><tr><td>
+          <p><code><a href="roll_on_oi.html">roll_on_oi()</a></code> </p>
+        </td>
+        <td><p>Roll on Open Interest</p></td>
       </tr><tr><td>
           <p><code><a href="rolling_ann_port_perf.html">rolling_ann_port_perf()</a></code> </p>
         </td>
@@ -156,6 +188,10 @@ Follows renaming of original cash_backtest function to fixed_commission_backtest
           <p><code><a href="us_tiered_commission.html">us_tiered_commission()</a></code> </p>
         </td>
         <td><p>US Tiered Minimum Commission Model</p></td>
+      </tr><tr><td>
+          <p><code><a href="wrangle_contracts_on_oi.html">wrangle_contracts_on_oi()</a></code> </p>
+        </td>
+        <td><p>Wrangle Futures Contracts for Simulation using Open Interest</p></td>
       </tr></tbody></table></div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -169,7 +205,7 @@ Follows renaming of original cash_backtest function to fixed_commission_backtest
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

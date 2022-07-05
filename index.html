@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">rsims</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.0.0.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.0.0</span>
       </span>
     </div>
 
@@ -43,7 +43,7 @@
   <a href="reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -72,6 +72,13 @@
 </h1></div>
 <p>Tools for financial simulation</p>
 <div class="section level2">
+<h2 id="description">Description<a class="anchor" aria-label="anchor" href="#description"></a>
+</h2>
+<p>Efficient quasi-event-driven backtesting functions with opinionated input requirements.</p>
+<p>Designed according to the following philosophy:<br>
+- Prioritise backtesting efficiency - Function inputs should be close to the natural outputs of the quant research process: dataframes/matrixes of prices and target weights. - Include helper functions for efficiently wrangling these research outputs into formats suitable for fast backtesting</p>
+</div>
+<div class="section level2">
 <h2 id="install-and-load">Install and load<a class="anchor" aria-label="anchor" href="#install-and-load"></a>
 </h2>
 <p>The easiest way to install and load <code>rsims</code> is using <code>pacman::p_load_current_gh</code> which wraps <code>devtools::install_github</code> and <code>require</code>:</p>
@@ -80,43 +87,49 @@
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
-<p>The key function is <code>cash_backtest</code>, an optimised event-driven backtesting function.</p>
-<p><code>cash_backtest</code> simulates trading into a set of weights (calculated upstream) subject to transaction cost and other constraints.</p>
-<p>It expects matrixes for <code>prices</code> and <code>theo_weights</code>, both with a timestamp as the first column and of the same dimensions. Further details in the function documentation.</p>
+<p>Depends on application:</p>
+<ul>
+<li>
+<code>min_commission_backtest</code>: suitable for backtesting under the assumption of minimum commission, for instance many equities brokers.</li>
+<li>
+<code>fixed_commission_backtest</code>: suitable for backtesting under the assumption of linear (fixed percentage) commission, for instance many crypto exchanges.</li>
+<li>
+<code>fixed_commission_futs_backtest</code>: suitable for backtesting expiring products under the assumption of linear (fixed percentage) commission, for instance CME futures.</li>
+</ul>
+<p>These functions are optimised for efficiency. They simulate trading into a set of weights (calculated upstream) subject to transaction cost and other constraints. They expect matrixes for prices and target weights.</p>
+<p>Example usage:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">rsims</span><span class="op">)</span>
-<span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cash_backtest.html">cash_backtest</a></span><span class="op">(</span><span class="va">prices</span>, <span class="va">theo_weights</span>, trade_buffer <span class="op">=</span> <span class="fl">0.</span>, initial_cash <span class="op">=</span> <span class="fl">10000</span>, commission_pct <span class="op">=</span> <span class="fl">0</span>, capitalise_profits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">rsims</span><span class="op">)</span></span>
+<span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/min_commission_backtest.html">min_commission_backtest</a></span><span class="op">(</span><span class="va">prices</span>, <span class="va">theo_weights</span>, trade_buffer <span class="op">=</span> <span class="fl">0.</span>, initial_cash <span class="op">=</span> <span class="fl">10000</span>, commission_pct <span class="op">=</span> <span class="fl">0</span>, capitalise_profits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p>Further details in the respective function documentation.</p>
+<p>Examples of wrangling data for input to these functions can be found in the vignettes.</p>
 </div>
 <div class="section level2">
 <h2 id="approach-to-calculating-position-deltas">Approach to calculating position deltas<a class="anchor" aria-label="anchor" href="#approach-to-calculating-position-deltas"></a>
 </h2>
-<p>Currently there is one module implemented for calculating position deltas: the “no-trade region” approach. See the examples for dteails on how this approach works, where it is reasonable, where it shouldn’t be used.</p>
-<p>The intent is to implement other approaches in the future, such as numerical optimisation of the return-risk-cost problem, subject to constraints.</p>
+<p>Position deltas are calculated using the trade buffer approach. Positions are rebalanced once they deviate from their target by more than a user-supplied <code>trade_buffer</code>. Rebalancing happens slightly differently depending on the commission model used:<br>
+- for minimum commission backtesting, rebalance back to the target weight - for fixed commission backtesting, rebalance back to the target weight plus/minus the trade buffer</p>
+<p>These are heuristic rules that are theoretically optimal give the different cost models. <a href="https://twitter.com/macrocephalopod/status/1373236950728052736" class="external-link">Here’s a good derivation from @macrocephalopod on Twitter.</a></p>
+<p>Other approaches to trade determination may be implemented in the future.</p>
 </div>
 <div class="section level2">
 <h2 id="cost-model">Cost model<a class="anchor" aria-label="anchor" href="#cost-model"></a>
 </h2>
-<p>Currently <code>rsims</code> implements a simplified “fixed percent of traded value” cost model. For some applications, market impact, spread, and commission might be reasonably represented by such a model. No attempt is made (yet) to explicitly account for these costs separately. Borrow, margin and funding costs are not yet implemented.</p>
+<p>Currently <code>rsims</code> implements simplified cost models that only include commission. For some applications, the various costs (market impact, spread, and commission) might be reasonably represented by such a model. No attempt is made (yet) to explicitly account for these costs separately. Borrow and funding costs are not yet implemented.</p>
 </div>
 <div class="section level2">
 <h2 id="examples-and-vignettes">Examples and vignettes<a class="anchor" aria-label="anchor" href="#examples-and-vignettes"></a>
 </h2>
-<div class="section level3">
-<h3 id="wrangling-data-for-input-to-cash_backtest">Wrangling data for input to <code>cash_backtest</code>
-<a class="anchor" aria-label="anchor" href="#wrangling-data-for-input-to-cash_backtest"></a>
-</h3>
-</div>
-<div class="section level3">
-<h3 id="finding-the-historically-sharpe-optimal-trade-buffer-parameter">Finding the historically sharpe-optimal trade buffer parameter<a class="anchor" aria-label="anchor" href="#finding-the-historically-sharpe-optimal-trade-buffer-parameter"></a>
-</h3>
-<p>Here’s a good derivation from @macrocephalopod on Twitter: <a href="https://twitter.com/macrocephalopod/status/1373236950728052736" class="external-link uri">https://twitter.com/macrocephalopod/status/1373236950728052736</a></p>
-<p>This leads to simple heuristic trading rule - which is theoretically optimal if your costs are linear and you don’t mind holding exposures within a certain range.</p>
-<p>It’s not a good approach when your trading costs aren’t approximately linear, for example, small trading with a fixed minimum commission per trade.</p>
-</div>
-<div class="section level3">
-<h3 id="lagging-signal-with-respect-to-prices-lagging-theo-weights-is-equivalent">Lagging signal with respect to prices (lagging theo weights is equivalent)<a class="anchor" aria-label="anchor" href="#lagging-signal-with-respect-to-prices-lagging-theo-weights-is-equivalent"></a>
-</h3>
-</div>
+<p>TODO</p>
+<div class="section level3"><h3 id="backtesting-etf-strategies-with-min_commission_backtest">Backtesting ETF strategies with <code>min_commission_backtest</code>
+<a class="anchor" aria-label="anchor" href="#backtesting-etf-strategies-with-min_commission_backtest"></a>
+</h3></div>
+<div class="section level3"><h3 id="finding-the-historically-sharpe-optimal-trade-buffer-parameter-for-a-crypto-momentum-strategy-with-fixed_commission_backtest">Finding the historically sharpe-optimal trade buffer parameter for a crypto momentum strategy with <code>fixed_commission_backtest</code>
+<a class="anchor" aria-label="anchor" href="#finding-the-historically-sharpe-optimal-trade-buffer-parameter-for-a-crypto-momentum-strategy-with-fixed_commission_backtest"></a>
+</h3></div>
+<div class="section level3"><h3 id="backtesting-cme-futures-with-fixed_commission_futs_backtest">Backtesting CME futures with <code>fixed_commission_futs_backtest</code>
+<a class="anchor" aria-label="anchor" href="#backtesting-cme-futures-with-fixed_commission_futs_backtest"></a>
+</h3></div>
 </div>
 </div>
   </div>
@@ -158,7 +171,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer>

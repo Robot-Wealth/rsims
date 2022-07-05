@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rsims</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.0.0.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.0.0</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -54,34 +54,43 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">stacked_area_chart</span><span class="op">(</span><span class="va">results_df</span>, <span class="va">title</span>, <span class="va">tickers</span>, <span class="va">colours</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">stacked_area_chart</span><span class="op">(</span><span class="va">results_df</span>, <span class="va">title</span>, <span class="va">tickers</span>, <span class="va">colours</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>results_df</dt>
 <dd><p>Results dataframe from rsims backtest with daily NAV</p></dd>
+
+
 <dt>title</dt>
 <dd><p>Plot title</p></dd>
+
+
 <dt>tickers</dt>
 <dd><p>Character vector of tickers used in the simulation</p></dd>
+
+
 <dt>colours</dt>
 <dd><p>Character vector of colours to use for tickers and Cash exposures</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>A ggplot2 stacked area chart of timeseries of exposures and NAV</p>
+    
+
+<p>A ggplot2 stacked area chart of timeseries of exposures and NAV</p>
     </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in"><span class="va">tickers</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">prices</span><span class="op">$</span><span class="va">ticker</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">my_cols</span> <span class="op">=</span> <span class="fu"><a href="portfolio_colours.html">portfolio_colours</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">tickers</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="cash_backtest.html">cash_backtest</a></span><span class="op">(</span><span class="va">prices</span>, <span class="va">weights</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span>
-<span class="r-in">  <span class="fu"><a href="append_nav_to_bt_results.html">append_nav_to_bt_results</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span>
-<span class="r-in">  <span class="fu">stacked_area_chart</span><span class="op">(</span><span class="st">"Exposures and NAV"</span>, tickers <span class="op">=</span> <span class="va">tickers</span>, colours <span class="op">=</span> <span class="va">my_cols</span><span class="op">)</span></span>
-<span class="r-in"><span class="op">}</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span><span class="va">tickers</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">prices</span><span class="op">$</span><span class="va">ticker</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">my_cols</span> <span class="op">=</span> <span class="fu"><a href="portfolio_colours.html">portfolio_colours</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">tickers</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="cash_backtest.html">cash_backtest</a></span><span class="op">(</span><span class="va">prices</span>, <span class="va">weights</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="append_nav_to_bt_results.html">append_nav_to_bt_results</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="pipe.html">%&gt;%</a></span></span></span>
+<span class="r-in"><span>  <span class="fu">stacked_area_chart</span><span class="op">(</span><span class="st">"Exposures and NAV"</span>, tickers <span class="op">=</span> <span class="va">tickers</span>, colours <span class="op">=</span> <span class="va">my_cols</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -96,7 +105,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>
