@@ -96,6 +96,9 @@ wrangle_contracts_on_oi <- function(contracts) {
 #' Returns a matrix with 3 columns per symbol plus the date. Symbols appear as
 #' suffixes in the column names (the `*` below).
 #'
+#' Handles missing data by filling forward the last value, except for leading
+#' NAs which persist.
+#'
 #' @param wrangled_contracts dataframe output of `wrangle_contracts_on_oi()`
 #'
 #' @return Wide numerical matrix with the following columns:
@@ -123,6 +126,7 @@ make_sim_prices_matrix <- function(wrangled_contracts) {
       names_from = symbol,
       values_from = c(close_current_contract, close_previous_contract, roll)
     ) %>%
+    tidyr::fill(all(), .direction = "down") %>%
     data.matrix()
 }
 
