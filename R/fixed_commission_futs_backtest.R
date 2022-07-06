@@ -126,7 +126,7 @@ make_sim_prices_matrix <- function(wrangled_contracts) {
       names_from = symbol,
       values_from = c(close_current_contract, close_previous_contract, roll)
     ) %>%
-    tidyr::fill(all(), .direction = "down") %>%
+    tidyr::fill(dplyr::everything(), .direction = "down") %>%
     data.matrix()
 }
 
