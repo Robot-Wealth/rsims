@@ -151,7 +151,7 @@ test_that("Margin is never negative", {
 
 })
 
-test_that("Misaligned prices and rates timestamps causes error", {
+test_that("Asset-wise column order mismatch in prices and weights matrixes causes error", {
   futures <- readRDS(test_path("fixtures", "futures.rds"))
   wrangled <- wrangle_contracts_on_oi(futures)
   sim_prices <- make_sim_prices_matrix(wrangled)
