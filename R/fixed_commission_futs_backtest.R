@@ -297,6 +297,15 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
   if(length(misaligned_timestamps) > 0)
     stop(glue::glue("Timestamps of prices and rates matrixes are misaligned"))
 
+  # check for NA in weights and rates matrixes
+  if(any(is.na(target_weights))) {
+    warning("NA present in target weights: consider replacing these values before continuing")
+  }
+
+  if(any(is.na(interest_rates))) {
+    warning("NA present in interest rates data: consider replacing these values before continuing")
+  }
+
   # check column order matches in prices and target_weights
   prices_cols <- colnames(prices)[2:(num_assets+1)] %>% stringr::str_remove("close_current_contract_")
   if(! all(prices_cols == symbols))
@@ -339,12 +348,12 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
     current_roll_price <- prices[i, c((2+num_assets):(2+2*num_assets-1))]  # prices of contract rolled out of today
     roll <- prices[i, c((2+2*num_assets):(2+3*num_assets-1))]  # 0 or 1 designating whether we rolled or not
     current_weights <- target_weights[i, -1]
-    current_interest_rate <- interest_rates[i, -1]
+    current_interest_rate <- ifelse(is.na(interest_rates[i, -1]), 0, interest_rates[i, -1])
 
     # calculate cash settled at today's close based on yesterday's positions and if we roll
 
     # get number of contracts to roll out of
-    roll_contracts <- ifelse(roll == 0, 0, -contract_pos)
+    roll_contracts <- ifelse(roll == 0 | is.na(roll), 0, -contract_pos)
     roll_commissions <- commission_fun(roll_contracts, ...)
     # cash settled on contracts rolled out of
     settled_cash <- ifelse(roll_contracts == 0, contract_pos * (current_price - previous_price), contract_pos * (current_roll_price - previous_roll_price))  # previous_roll_price will be previous_price unless we rolled yesterday too
