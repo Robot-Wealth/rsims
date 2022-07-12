@@ -26,6 +26,9 @@ Transforms a wrangled contracts dataframe (the output of
 
 Returns a matrix with 3 columns per symbol plus the date. Symbols appear as
 suffixes in the column names (the \code{*} below).
+
+Handles missing data by filling forward the last value, except for leading
+NAs which persist.
 }
 \examples{
 \dontrun{

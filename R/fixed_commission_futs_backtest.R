@@ -164,7 +164,7 @@ make_sim_weights_matrix <- function(weights) {
 
 #' Futures Backtest, roll on days to expiry, fixed commission model
 #'
-#' @description Event-based simulation based on desired futures positions, raw
+#' @description Quasi event-based simulation based on desired futures positions, raw
 #' contract prices (ie not backadjusted) and roll dates determine by maximum
 #' open interest.
 #'
@@ -195,6 +195,8 @@ make_sim_weights_matrix <- function(weights) {
 #' function. Weights should be date-aligned with the prices at which you assume
 #' you trade into them. This means that you will generally need to lag your
 #' weights upstream.
+#' - Works on contract value (close * point value) and assumes all contracts are
+#' in USD (TODO: support contracts denominated in different currencies)
 #'
 #'
 #' @param prices Matrix of trade prices as per output of

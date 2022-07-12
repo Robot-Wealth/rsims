@@ -2,16 +2,16 @@
 % Please edit documentation in R/min_commission_backtest.R
 \name{min_commission_backtest}
 \alias{min_commission_backtest}
-\title{Equities Cash Accounting Backtest}
+\title{Equities Minimum Commission Backtest}
 \usage{
 min_commission_backtest(
   prices,
   unadjusted_prices,
-  theo_weights,
+  target_weights,
+  interest_rates = NULL,
   trade_buffer = 0,
   initial_cash = 10000,
   capitalise_profits = FALSE,
-  leverage = 1,
   commission_fun,
   ...
 )
@@ -19,23 +19,99 @@ min_commission_backtest(
 \arguments{
 \item{prices}{Matrix of trade prices. Column 1 must be the timestamp or index.}
 
-\item{theo_weights}{Matrix of theoretical weights. Column 1 must be the timestamp or index.}
+\item{unadjusted_prices}{Matrix of unadjusted prices. Column 1 must be the
+timestamp or index. Used to calculate commission based on actual number of
+shares traded.}
 
-\item{trade_buffer}{Trade buffer parameter}
+\item{target_weights}{Matrix of target weights. Column 1 must be the
+timestamp or index.}
+
+\item{interest_rates}{Matrix of daily interest rates applied to unused cash
+(positive interest) and borrowed cash (negative interest). If not passed,
+assumes constant interest rate of zero.}
+
+\item{trade_buffer}{Trade buffer parameter (see details)}
 
 \item{initial_cash}{Inital cash balance}
 
 \item{capitalise_profits}{If TRUE, utilise profits and initial cash balance in determining position sizes. If FALSE, profits accrue as a cash balance and are not reinvested.}
 
-\item{commission_pct}{Percent commission charged on trades}
+\item{commission_fun}{Function for determining commissions from prices and
+trades}
+
+\item{...}{Additional arguments passed to commission_fun. For
+\code{us_tiered_commission}, this will be \code{max_pct_per_order} (the maximum
+commission as a percentage of order value), \code{min_dollars_per_order} (the
+minimum commission in dollars of a single order), \code{dollars_per_share} (the
+per-share cost in dollars - for IB fixed tier, 0.005 is reasonable).}
 }
 \value{
-long dataframe of results - dates, trades, commissions, value of portfolio components
+long dataframe of results consisting of the following columns:
+ticker: Ticker or Cash
+date: In YYYY-MM-DD format
+close: Closing price (adjusted).
+shares: Number of shares held.
+exposure: Value of exposure to current ticker or to Cash.
+share_trades: Number of shares traded, including any positions that
+were liquidated fully or partially.
+trade_value: Value of shares traded, including any positions that
+were liquidated fully or partially.
+commission: Commissions paid on today's trading, including any liquidated
+positions.
+interest: Interest accrued on yesterday's cash balance and settled today.
+margin_call: Boolean indicating whether a margin call occurred today.
+reduced_target_pos: Boolean indicating whether target positions could not be
+executed due to insufficient margin, and were scaled back accordingly.
 }
 \description{
-Equities Cash Accounting Backtest
+Quasi event-based simulation based on target share weights,
+prices, commissions and interest.
+
+The function is quite opinionated with respect to the data that it expects.
+The idea is that user effort is spent in upstream data wrangling, and the
+payoff is an extremely efficient backtesting routine, enabling fast
+experimentation with parameters such as \code{trade_buffer} and different
+commission models.
 }
 \details{
-\code{theo_weights} should be date-aligned with \code{prices} - it is up to the user to lag \code{theo_weights} as necessary to
-ensure that trades occur at appropriate prices.
+\code{target_weights},  \code{prices}, \code{unadjusted_prices}, and \code{interest_rates} should
+be date-aligned.
+
+The function will error if these matrixes are of different
+shape, or have different values in Column 1 (the date or index column).
+A simple approach to ensuring inputs conform with this requirement is in the
+vignette.
+
+It is up to the user to lag \code{target_weights} as necessary to ensure that
+trades occur at appropriate prices. Specifically, the function assumes that
+\code{target_weights} are date-aligned with \code{prices} such that the price at which
+you assume you trade into a target weight has the same index value.
+
+\code{interest_rates} are the daily percentage interest rate applied to the cash
+balance. It is up to the user to ensure this is in the correct format (for
+instance dividing by 100*365 if your raw data is in percent per-anum), and to
+apply a broker spread if necessary.
+
+The function assumes a margin requirement of 0.25 the value of the shares
+held and will liquidate positions if this requirement is not met (ie will
+simulate a margin call).
+
+The function doesn't consider short borrow costs yet.
+}
+\examples{
+\dontrun{
+results_df <- min_commission_backtest(
+  prices = backtest_prices,
+  unadjusted_prices = unadjusted_prices,
+  target_weights = target_weights,
+  interest_rates = rates,
+  trade_buffer = trade_buffer,
+  initial_cash = initial_cash,
+  capitalise_profits = FALSE,
+  commission_fun = us_tiered_commission,
+  max_pct_per_order = 0.01,
+  min_dollars_per_order = 1,
+  dollars_per_share = 0.005
+  )
+}
 }

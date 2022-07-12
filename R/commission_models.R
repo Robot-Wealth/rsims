@@ -31,7 +31,7 @@ fixed_percent <- function(trades, trade_value, commission_pct = 0.0) {
 #'
 #' @examples
 us_tiered_commission <- function(shares_traded, prices, unadjprices, max_pct_per_order, min_dollars_per_order, dollars_per_share) {
-  # x cents per share
+  # x dollars per share
   # min y dollars per order
   # max z% of tradevalue
   tradevalue <- shares_traded * prices

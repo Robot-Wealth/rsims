@@ -76,7 +76,7 @@ reduced_target_pos: Boolean indicating whether target positions could not be
 executed due to insufficient margin, and were scaled back accordingly.
 }
 \description{
-Event-based simulation based on desired futures positions, raw
+Quasi event-based simulation based on desired futures positions, raw
 contract prices (ie not backadjusted) and roll dates determine by maximum
 open interest.
 
@@ -108,6 +108,8 @@ portfolio (TODO: support asset-wise margin requirements)
 function. Weights should be date-aligned with the prices at which you assume
 you trade into them. This means that you will generally need to lag your
 weights upstream.
+\item Works on contract value (close * point value) and assumes all contracts are
+in USD (TODO: support contracts denominated in different currencies)
 }
 }
 \examples{
