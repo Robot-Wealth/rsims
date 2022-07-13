@@ -103,6 +103,7 @@
 min_commission_backtest <- function(prices, unadjusted_prices, target_weights, interest_rates = NULL, short_borrow_costs = NULL, trade_buffer = 0., initial_cash = 10000, capitalise_profits = FALSE, commission_fun, ...) {
 
   MAINT_MARGIN <- 0.25
+  broker_interest_spread <- 0.5/100
 
   if(trade_buffer < 0)
     stop("trade_buffer must be greater than or equal to zero")
@@ -148,7 +149,11 @@ min_commission_backtest <- function(prices, unadjusted_prices, target_weights, i
     current_interest_rate <- ifelse(is.na(interest_rates[i, -1]), 0, interest_rates[i, -1])
 
     # interest is accrued on yesterday's cash balance at today's rate
-    interest <- current_interest_rate * Cash
+    interest <- ifelse(
+      Cash > 0,
+      (current_interest_rate-broker_interest_spread)*Cash,
+      (current_interest_rate+broker_interest_spread)*Cash
+    )
     # short borrow is debited based on holding yesterday's positions to today's close
     short_borrow <- short_borrow_costs/365 * ifelse(share_pos >= 0, 0, share_pos*current_price)
 
