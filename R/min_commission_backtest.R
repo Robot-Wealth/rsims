@@ -103,7 +103,7 @@
 min_commission_backtest <- function(prices, unadjusted_prices, target_weights, interest_rates = NULL, short_borrow_costs = NULL, trade_buffer = 0., initial_cash = 10000, capitalise_profits = FALSE, commission_fun, ...) {
 
   MAINT_MARGIN <- 0.25
-  broker_interest_spread <- 0.5/100
+  broker_interest_spread <- 0.5/(100*365)
 
   if(trade_buffer < 0)
     stop("trade_buffer must be greater than or equal to zero")
