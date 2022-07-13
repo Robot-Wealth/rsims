@@ -9,6 +9,7 @@ min_commission_backtest(
   unadjusted_prices,
   target_weights,
   interest_rates = NULL,
+  short_borrow_costs = NULL,
   trade_buffer = 0,
   initial_cash = 10000,
   capitalise_profits = FALSE,
@@ -29,6 +30,10 @@ timestamp or index.}
 \item{interest_rates}{Matrix of daily interest rates applied to unused cash
 (positive interest) and borrowed cash (negative interest). If not passed,
 assumes constant interest rate of zero.}
+
+\item{short_borrow_costs}{Named vector of annualised short borrow costs as percent. For
+example, c("TLT" = 0.0025) is equivalent to a short borrow cost of 0.25\%pa for
+TLT. Defaults to zero.}
 
 \item{trade_buffer}{Trade buffer parameter (see details)}
 
@@ -59,6 +64,8 @@ were liquidated fully or partially.
 commission: Commissions paid on today's trading, including any liquidated
 positions.
 interest: Interest accrued on yesterday's cash balance and settled today.
+short_borrow: Borrow costs from holding yesterday's short positions through
+today's close.
 margin_call: Boolean indicating whether a margin call occurred today.
 reduced_target_pos: Boolean indicating whether target positions could not be
 executed due to insufficient margin, and were scaled back accordingly.

@@ -25,6 +25,9 @@
 #' @param interest_rates Matrix of daily interest rates applied to unused cash
 #' (positive interest) and borrowed cash (negative interest). If not passed,
 #' assumes constant interest rate of zero.
+#' @param short_borrow_costs Named vector of annualised short borrow costs as percent. For
+#' example, c("TLT" = 0.0025) is equivalent to a short borrow cost of 0.25%pa for
+#' TLT. Defaults to zero.
 #' @param trade_buffer Trade buffer parameter (see details)
 #' @param initial_cash Inital cash balance
 #' @param capitalise_profits If TRUE, utilise profits and initial cash balance in determining position sizes. If FALSE, profits accrue as a cash balance and are not reinvested.
@@ -49,6 +52,8 @@
 #'  commission: Commissions paid on today's trading, including any liquidated
 #'  positions.
 #'  interest: Interest accrued on yesterday's cash balance and settled today.
+#'  short_borrow: Borrow costs from holding yesterday's short positions through
+#'  today's close.
 #'  margin_call: Boolean indicating whether a margin call occurred today.
 #'  reduced_target_pos: Boolean indicating whether target positions could not be
 #'  executed due to insufficient margin, and were scaled back accordingly.
@@ -95,7 +100,7 @@
 #'   )
 #' }
 #' @export
-min_commission_backtest <- function(prices, unadjusted_prices, target_weights, interest_rates = NULL, trade_buffer = 0., initial_cash = 10000, capitalise_profits = FALSE, commission_fun, ...) {
+min_commission_backtest <- function(prices, unadjusted_prices, target_weights, interest_rates = NULL, short_borrow_costs = NULL, trade_buffer = 0., initial_cash = 10000, capitalise_profits = FALSE, commission_fun, ...) {
 
   MAINT_MARGIN <- 0.25
 
@@ -117,8 +122,14 @@ min_commission_backtest <- function(prices, unadjusted_prices, target_weights, i
   }
 
   num_assets <- ncol(target_weights) - 1
-  # get tickers for later
   tickers <- colnames(target_weights)[-1]
+
+  if(is.null(short_borrow_costs)) {
+    short_borrow_costs <- rep(0, num_assets)
+    names(short_borrow_costs == tickers)
+  } else if(!names(short_borrow_costs) == tickers) {
+    stop("short_borrow_costs must be a named vector with names corresponding to tickers")
+  }
 
   rowlist <- vector(mode = "list", length = nrow(target_weights))  # preallocate list to store daily backtest data
 
@@ -136,10 +147,15 @@ min_commission_backtest <- function(prices, unadjusted_prices, target_weights, i
     current_unadjprice <-unadjusted_prices[i, -1]
     current_interest_rate <- ifelse(is.na(interest_rates[i, -1]), 0, interest_rates[i, -1])
 
-    # update interest, cash and total equity balance
+    # interest is accrued on yesterday's cash balance at today's rate
     interest <- current_interest_rate * Cash
-    Cash <- Cash + interest
+    # short borrow is debited based on holding yesterday's positions to today's close
+    short_borrow <- short_borrow_costs/365 * ifelse(share_pos >= 0, 0, share_pos*current_price)
+
+    # update cash and total equity
+    Cash <- Cash + interest + sum(short_borrow)
     equity <- sum(share_pos * current_price) + Cash
+
     if(equity > 0) {
       # force reduce position if exceeds maintenance margin requirements
       margin_call <- FALSE
@@ -247,17 +263,18 @@ min_commission_backtest <- function(prices, unadjusted_prices, target_weights, i
         c(-sum(trade_value), trade_value),
         c(0, commissions + liq_commissions),
         c(interest, rep(0, num_assets)),
+        c(0, short_borrow),
         rep(margin_call, num_assets+1),   # bool will be stored as int (1-0)
         rep(reduced_target_pos, num_assets+1)
       ),
       nrow = num_assets + 1,
-      ncol = 10,
+      ncol = 11,
       byrow = FALSE,
       dimnames = list(
         # tickers are row names
         c("Cash", tickers),
         # column names
-        c("date", "close", "shares", "exposure", "share_trades", "trade_value", "commission", "interest", "margin_call", "reduced_target_pos")
+        c("date", "close", "shares", "exposure", "share_trades", "trade_value", "commission", "interest", "short_borrow", "margin_call", "reduced_target_pos")
       )
     )
 
