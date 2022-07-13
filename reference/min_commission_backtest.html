@@ -23,7 +23,7 @@ commission models."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/aj
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rsims</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.0.2</span>
       </span>
     </div>
 
@@ -71,6 +71,7 @@ commission models.</p>
 <span>  <span class="va">unadjusted_prices</span>,</span>
 <span>  <span class="va">target_weights</span>,</span>
 <span>  interest_rates <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  short_borrow_costs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  trade_buffer <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  initial_cash <span class="op">=</span> <span class="fl">10000</span>,</span>
 <span>  capitalise_profits <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -100,6 +101,12 @@ timestamp or index.</p></dd>
 <dd><p>Matrix of daily interest rates applied to unused cash
 (positive interest) and borrowed cash (negative interest). If not passed,
 assumes constant interest rate of zero.</p></dd>
+
+
+<dt>short_borrow_costs</dt>
+<dd><p>Named vector of annualised short borrow costs as percent. For
+example, c("TLT" = 0.0025) is equivalent to a short borrow cost of 0.25%pa for
+TLT. Defaults to zero.</p></dd>
 
 
 <dt>trade_buffer</dt>
@@ -144,6 +151,8 @@ were liquidated fully or partially.
 commission: Commissions paid on today's trading, including any liquidated
 positions.
 interest: Interest accrued on yesterday's cash balance and settled today.
+short_borrow: Borrow costs from holding yesterday's short positions through
+today's close.
 margin_call: Boolean indicating whether a margin call occurred today.
 reduced_target_pos: Boolean indicating whether target positions could not be
 executed due to insufficient margin, and were scaled back accordingly.</p>
