@@ -151,7 +151,7 @@ min_commission_backtest <- function(prices, unadjusted_prices, target_weights, i
     # interest is accrued on yesterday's cash balance at today's rate
     interest <- ifelse(
       Cash > 0,
-      (current_interest_rate-broker_interest_spread)*Cash,
+      max(0, (current_interest_rate-broker_interest_spread)) * Cash,
       (current_interest_rate+broker_interest_spread)*Cash
     )
     # short borrow is debited based on holding yesterday's positions to today's close
