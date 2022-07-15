@@ -212,7 +212,7 @@ calc_ann_turnover <- function(results_df, mean_equity, start_date, end_date) {
       tradevalue < 0,
       date != start_date
     ) %>%
-    dplyr::summarise(sellvalue = sum(tradevalue)) %>%
+    dplyr::summarise(sellvalue = sum(trade_value)) %>%
     dplyr::pull()
 
   if(length(totalselltrades) == 0) {
@@ -335,7 +335,7 @@ trades_chart <- function(results_df, title, fill_scale, colour_scale) {
   # specifying colour for bar plots will render a border, without which some bars don't plot due to long x-axis
   results_df %>%
     dplyr::filter(!ticker %in% c('Cash', 'Portfolio')) %>%
-    ggplot2::ggplot(aes(x = date, y = tradevalue, fill = ticker, colour = ticker)) +
+    ggplot2::ggplot(aes(x = date, y = trade_value, fill = ticker, colour = ticker)) +
     ggplot2::geom_bar(stat = 'identity', position = ggplot2::position_stack(), lwd = 0.6) +
     fill_scale +
     colour_scale +
