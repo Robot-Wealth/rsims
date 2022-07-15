@@ -209,7 +209,7 @@ calc_ann_turnover <- function(results_df, mean_equity, start_date, end_date) {
   totalselltrades <- results_df %>%
     dplyr::filter(
       ticker != 'Cash',
-      tradevalue < 0,
+      trade_value < 0,
       date != start_date
     ) %>%
     dplyr::summarise(sellvalue = sum(trade_value)) %>%
