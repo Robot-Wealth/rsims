@@ -127,9 +127,12 @@ min_commission_backtest <- function(prices, unadjusted_prices, target_weights, i
 
   if(is.null(short_borrow_costs)) {
     short_borrow_costs <- rep(0, num_assets)
-    names(short_borrow_costs == tickers)
-  } else if(!names(short_borrow_costs) == tickers) {
+    names(short_borrow_costs) <- tickers
+  } else if(! all(names(short_borrow_costs) %in% tickers)) {
     stop("short_borrow_costs must be a named vector with names corresponding to tickers")
+  } else {
+    # ensure short_borrow_costs ordered same as prices, weights
+    short_borrow_costs <- short_borrow_costs[sort(names(short_borrow_costs))]
   }
 
   rowlist <- vector(mode = "list", length = nrow(target_weights))  # preallocate list to store daily backtest data
