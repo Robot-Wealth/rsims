@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">rsims</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.0.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.0.4</span>
       </span>
     </div>
 
@@ -75,8 +75,12 @@
 <h2 id="description">Description<a class="anchor" aria-label="anchor" href="#description"></a>
 </h2>
 <p>Efficient quasi-event-driven backtesting functions with opinionated input requirements.</p>
-<p>Designed according to the following philosophy:<br>
-- Prioritise backtesting efficiency - Function inputs should be close to the natural outputs of the quant research process: dataframes/matrixes of prices and target weights. - Include helper functions for efficiently wrangling these research outputs into formats suitable for fast backtesting</p>
+<p>Designed according to the following philosophy:</p>
+<ul>
+<li>Prioritise simulation efficiency</li>
+<li>Function inputs should be close to the natural outputs of the quant research process: dataframes/matrixes of prices and target weights.</li>
+<li>Include helper functions for efficiently wrangling these research outputs into formats suitable for fast backtesting</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="install-and-load">Install and load<a class="anchor" aria-label="anchor" href="#install-and-load"></a>
@@ -107,29 +111,33 @@
 <div class="section level2">
 <h2 id="approach-to-calculating-position-deltas">Approach to calculating position deltas<a class="anchor" aria-label="anchor" href="#approach-to-calculating-position-deltas"></a>
 </h2>
-<p>Position deltas are calculated using the trade buffer approach. Positions are rebalanced once they deviate from their target by more than a user-supplied <code>trade_buffer</code>. Rebalancing happens slightly differently depending on the commission model used:<br>
-- for minimum commission backtesting, rebalance back to the target weight - for fixed commission backtesting, rebalance back to the target weight plus/minus the trade buffer</p>
+<p>Position deltas are calculated using the trade buffer approach. Positions are rebalanced once they deviate from their target by more than a user-supplied <code>trade_buffer</code>. Rebalancing happens slightly differently depending on the commission model used:</p>
+<ul>
+<li>for minimum commission backtesting, rebalance back to the target weight<br>
+</li>
+<li>for fixed commission backtesting, rebalance back to the target weight plus/minus the trade buffer</li>
+</ul>
 <p>These are heuristic rules that are theoretically optimal give the different cost models. <a href="https://twitter.com/macrocephalopod/status/1373236950728052736" class="external-link">Here’s a good derivation from @macrocephalopod on Twitter.</a></p>
 <p>Other approaches to trade determination may be implemented in the future.</p>
 </div>
 <div class="section level2">
 <h2 id="cost-model">Cost model<a class="anchor" aria-label="anchor" href="#cost-model"></a>
 </h2>
-<p>Currently <code>rsims</code> implements simplified cost models that only include commission. For some applications, the various costs (market impact, spread, and commission) might be reasonably represented by such a model. No attempt is made (yet) to explicitly account for these costs separately. Borrow and funding costs are not yet implemented.</p>
+<p>Currently <code>rsims</code> implements simplified cost models that only include commission, borrow, and funding costs.</p>
+<p>For some applications, the various costs (market impact, spread, and commission) might be reasonably represented by such a model. No attempt is made (yet) to explicitly account for these costs separately.</p>
 </div>
 <div class="section level2">
 <h2 id="examples-and-vignettes">Examples and vignettes<a class="anchor" aria-label="anchor" href="#examples-and-vignettes"></a>
 </h2>
-<p>TODO</p>
-<div class="section level3"><h3 id="backtesting-etf-strategies-with-min_commission_backtest">Backtesting ETF strategies with <code>min_commission_backtest</code>
-<a class="anchor" aria-label="anchor" href="#backtesting-etf-strategies-with-min_commission_backtest"></a>
-</h3></div>
-<div class="section level3"><h3 id="finding-the-historically-sharpe-optimal-trade-buffer-parameter-for-a-crypto-momentum-strategy-with-fixed_commission_backtest">Finding the historically sharpe-optimal trade buffer parameter for a crypto momentum strategy with <code>fixed_commission_backtest</code>
-<a class="anchor" aria-label="anchor" href="#finding-the-historically-sharpe-optimal-trade-buffer-parameter-for-a-crypto-momentum-strategy-with-fixed_commission_backtest"></a>
-</h3></div>
-<div class="section level3"><h3 id="backtesting-cme-futures-with-fixed_commission_futs_backtest">Backtesting CME futures with <code>fixed_commission_futs_backtest</code>
-<a class="anchor" aria-label="anchor" href="#backtesting-cme-futures-with-fixed_commission_futs_backtest"></a>
-</h3></div>
+<p>TODO:</p>
+<ul>
+<li>Backtesting ETF strategies with <code>min_commission_backtest</code><br>
+</li>
+<li>Finding the historically sharpe-optimal trade buffer parameter for a crypto momentum strategy with <code>fixed_commission_backtest</code><br>
+</li>
+<li>Backtesting CME futures with <code>fixed_commission_futs_backtest</code>
+</li>
+</ul>
 </div>
 </div>
   </div>
@@ -171,7 +179,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer>
