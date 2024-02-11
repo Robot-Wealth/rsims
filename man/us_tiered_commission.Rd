@@ -18,9 +18,6 @@ us_tiered_commission(
 
 \item{dollars_per_share}{}
 }
-\value{
-
-}
 \description{
 US Tiered Minimum Commission Model
 }
