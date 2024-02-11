@@ -30,8 +30,11 @@ fixed_commission_backtest_with_funding <- function(prices, theo_weights, funding
   if(length(misaligned_timestamps) > 0)
     stop(glue::glue("Prices timestamps misaligned with funding rates timestamps at prices indexes {misaligned_timestamps}"))
 
-  if(!all.equal(dim(prices), dim(theo_weights), dim(funding_rates)))
-    stop("Prices, funding, and weights matrixes must have same dimensions")
+  if(!all.equal(dim(prices), dim(theo_weights)))
+    stop("Prices and weights matrixes must have same dimensions")
+
+  if(!all.equal(dim(prices), dim(funding_rates)))
+    stop("Prices and funding matrixes must have same dimensions")
 
   # get tickers for later
   tickers <- colnames(prices)[-1]
