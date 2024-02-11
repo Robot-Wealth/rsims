@@ -92,7 +92,7 @@ fixed_commission_backtest_with_funding <- function(prices, theo_weights, funding
         c(0, commissions)
       ),
       nrow = num_assets + 1,
-      ncol = 7,
+      ncol = 8,
       byrow = FALSE,
       dimnames = list(
         # tickers are row names
