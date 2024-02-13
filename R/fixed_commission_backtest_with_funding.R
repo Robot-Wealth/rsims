@@ -179,8 +179,8 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
       ncol = 11,
       byrow = FALSE,
       dimnames = list(
-        # symbols are row names
-        c("Cash", symbols),
+        # tickers are row names
+        c("Cash", tickers),
         # column names
         c("Date", "Close", "Position", "Value", "Margin", "Funding", "Trades", "TradeValue", "Commission", "MarginCall", "ReducedTargetPos")
       )
