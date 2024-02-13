@@ -137,16 +137,16 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
 
       reduce_by <-  max_post_trade_contracts_value/sum(abs(target_position_value))
       # ensure doesn't change sign from intended, but we only reduce target contracts no further than zero
-      target_contracts <- trunc(sign(target_positions) * reduce_by * pmax(abs(target_positions), rep(0, num_assets)))
+      target_positions <- trunc(sign(target_positions) * reduce_by * pmax(abs(target_positions), rep(0, num_assets)))
       trades <- target_positions - current_positions
       trade_value <- trades * current_prices
       commissions <- abs(trade_value) * commission_pct
 
-      current_positions <- target_contracts
+      current_positions <- target_positions
       position_value <- current_positions * current_prices
       post_trade_cash <- cash + maint_margin - margin*sum(abs(position_value)) - sum(commissions)
     } else {
-      current_positions <- target_contracts
+      current_positions <- target_positions
       position_value <- current_positions * current_prices
     }
 
