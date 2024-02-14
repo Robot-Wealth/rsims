@@ -52,6 +52,7 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
   num_assets <- ncol(prices) - 1  # -1 for date column
   current_positions <- rep(0, num_assets)
   previous_target_weights <- rep(0, num_assets)
+  previous_prices <- rep(NA, num_assets)
   row_list <- vector(mode = "list", length = nrow(prices))  # preallocate for slight speedup
   cash <- initial_cash
   maint_margin <- 0
@@ -66,12 +67,15 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
     current_target_weights <- target_weights[i, -1]
     current_funding_rates <- funding_rates[i, -1]
 
+    period_pnl <- current_positions * (current_prices - previous_prices)  # equivalent to settled cash in CME futures
+    period_pnl <- ifelse(is.na(period_pnl), 0, period_pnl)
+
     # accrue funding on current positions
     funding <- current_positions*current_prices*current_funding_rates
 
     # update cash balance - includes adding back yesterday's margin and deducting today's margin
     # set na.rm = TRUE in sum functions as prices can have NA value
-    cash <- cash + sum(funding, na.rm = TRUE) + maint_margin - margin*sum(abs(current_positions)*current_prices, na.rm = TRUE)
+    cash <- cash + sum(period_pnl) + sum(funding, na.rm = TRUE) + maint_margin - margin*sum(abs(current_positions)*current_prices, na.rm = TRUE)
 
     # update margin requirements
     # TODO: assumption: each contract has same maintenance margin requirements
@@ -83,7 +87,7 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
     liq_contracts <- rep(0, num_assets)
     liq_commissions <- rep(0, num_assets)
     liq_trade_value <- rep(0, num_assets)
-    if(cash < 0) {
+    if(cash < maint_margin) {
       margin_call <- TRUE
 
       # liquidate equal proportions of each contract holding
@@ -112,6 +116,7 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
     # update equity
     equity <- sum(current_positions * current_prices, na.rm = TRUE) + cash
     cap_equity <- ifelse(capitalise_profits, equity, min(initial_cash, equity))  # min reflects assumption that we don't top up strategy equity if in drawdown
+    # print(glue::glue("cap eq: {cap_equity}, eq: {equity}"))
 
     # update positions based on no-trade buffer
     # TODO: consider commissions in calculating position sizes (otherwise can go over leverage 1)
@@ -125,13 +130,14 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
     # post-trade cash:  cash freed up from closing positions, cash used as margin, commissions
     target_position_value <- target_positions * current_prices
     post_trade_cash <- cash + maint_margin - margin*sum(abs(target_position_value), na.rm = TRUE) - sum(commissions, na.rm = TRUE)
+    # print(glue::glue("post_trade_cash: {post_trade_cash}"))
 
     reduced_target_pos <- FALSE
-    if(post_trade_cash < 0) {
+    if(post_trade_cash < maint_margin) {
       reduced_target_pos <- TRUE
       # adjust trade size down
       # post trade, max value of position can be found by:
-      # Cash + freed_margin - post_trade_margin - commissions = 0
+      # Cash + freed_margin - post_trade_margin - commissions = maint_margin
       # setting commissions to the value calculated for full trade size above (will be conservative), we get:
       # max_post_trade_contracts_value = (cash + freed_margin - commissions)/margin_requirement
       max_post_trade_contracts_value <- 0.95*(cash + maint_margin - sum(commissions, na.rm = TRUE))/margin
@@ -156,10 +162,9 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
     maint_margin <- margin*sum(abs(position_value), na.rm = TRUE)
 
     # adjust cash by value of trades
-    # cash <- cash - sum(trade_value, na.rm = TRUE) - sum(commissions, na.rm = TRUE)
-    # current_positions <- target_positions
-    # position_value <- current_positions * current_prices
     equity <- sum(position_value, na.rm = TRUE) + cash
+    # print(glue::glue("Eq at end of loop: {equity}"))
+    # print(glue::glue("cash at end of loop: {cash}"))
 
     # store date in matrix as numeric, then convert back to date format with as.Date(date_col, origin ="1970-01-01")
     row_mat <- matrix(
@@ -169,6 +174,7 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
         c(0, current_positions),
         c(cash, position_value),
         c(0, margin*abs(position_value)),
+        c(0, period_pnl),
         c(0, funding),
         c(0, trades - liq_contracts),  # minus because we keep sign of original position in liq_contracts
         c(-sum(trade_value, -liq_trade_value, na.rm = TRUE), trade_value-liq_trade_value),
@@ -177,42 +183,20 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
         rep(reduced_target_pos, num_assets+1)
       ),
       nrow = num_assets + 1,
-      ncol = 11,
+      ncol = 12,
       byrow = FALSE,
       dimnames = list(
         # tickers are row names
         c("Cash", tickers),
         # column names
-        c("Date", "Close", "Position", "Value", "Margin", "Funding", "Trades", "TradeValue", "Commission", "MarginCall", "ReducedTargetPos")
+        c("Date", "Close", "Position", "Value", "Margin", "PeriodPnL", "Funding", "Trades", "TradeValue", "Commission", "MarginCall", "ReducedTargetPos")
       )
     )
-
-    # # store date in matrix as numeric (then convert date back to date format later)
-    # row_mat <- matrix(
-    #   data = c(
-    #     rep(as.numeric(current_date), num_assets + 1),
-    #     c(1, current_prices),
-    #     c(cash, current_positions),
-    #     c(cash, position_value),
-    #     c(-sum(trade_value), trades),
-    #     c(-sum(trade_value), trade_value),
-    #     c(0, funding),  # no interest on cash balance
-    #     c(0, commissions)
-    #   ),
-    #   nrow = num_assets + 1,
-    #   ncol = 8,
-    #   byrow = FALSE,
-    #   dimnames = list(
-    #     # tickers are row names
-    #     c("Cash", tickers),
-    #     # column names
-    #     c("Date", "Close", "Position", "Value", "Trades", "TradeValue", "Funding", "Commission")
-    #   )
-    # )
 
     row_list[[i]] <- row_mat
 
     previous_target_weights <- current_target_weights
+    previous_prices <- current_prices
   }
 
   # Combine list of matrixes into dataframe
