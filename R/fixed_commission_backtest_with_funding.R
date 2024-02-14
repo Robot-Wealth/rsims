@@ -70,12 +70,13 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
     funding <- current_positions*current_prices*current_funding_rates
 
     # update cash balance - includes adding back yesterday's margin and deducting today's margin
-    cash <- cash + sum(funding, na.rm = TRUE) + maint_margin - margin*sum(abs(current_positions)*current_prices)
+    # set na.rm = TRUE in sum functions as prices can have NA value
+    cash <- cash + sum(funding, na.rm = TRUE) + maint_margin - margin*sum(abs(current_positions)*current_prices, na.rm = TRUE)
 
     # update margin requirements
     # TODO: assumption: each contract has same maintenance margin requirements
     position_value <- current_positions * current_prices
-    maint_margin <- margin * sum(abs(position_value))
+    maint_margin <- margin * sum(abs(position_value), na.rm = TRUE)
 
     # force reduce position if exceeds maintenance margin requirements
     margin_call <- FALSE
@@ -103,9 +104,9 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
 
       # account for freed margin
       # freed_margin <- margin*sum(abs(liq_contracts)*current_price)
-      cash <- cash + maint_margin -margin*sum(abs(position_value)) - sum(liq_commissions)
+      cash <- cash + maint_margin -margin*sum(abs(position_value), na.rm = TRUE) - sum(liq_commissions, na.rm = TRUE)
 
-      maint_margin <- margin * sum(abs(position_value))
+      maint_margin <- margin * sum(abs(position_value), na.rm = TRUE)
     }
 
     # update equity
@@ -123,7 +124,7 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
 
     # post-trade cash:  cash freed up from closing positions, cash used as margin, commissions
     target_position_value <- target_positions * current_prices
-    post_trade_cash <- cash + maint_margin - margin*sum(abs(target_position_value)) - sum(commissions)
+    post_trade_cash <- cash + maint_margin - margin*sum(abs(target_position_value), na.rm = TRUE) - sum(commissions, na.rm = TRUE)
 
     reduced_target_pos <- FALSE
     if(post_trade_cash < 0) {
@@ -133,9 +134,9 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
       # Cash + freed_margin - post_trade_margin - commissions = 0
       # setting commissions to the value calculated for full trade size above (will be conservative), we get:
       # max_post_trade_contracts_value = (cash + freed_margin - commissions)/margin_requirement
-      max_post_trade_contracts_value <- 0.95*(cash + maint_margin - sum(commissions))/margin
+      max_post_trade_contracts_value <- 0.95*(cash + maint_margin - sum(commissions, na.rm = TRUE))/margin
 
-      reduce_by <-  max_post_trade_contracts_value/sum(abs(target_position_value))
+      reduce_by <-  max_post_trade_contracts_value/sum(abs(target_position_value), na.rm = TRUE)
       # ensure doesn't change sign from intended, but we only reduce target contracts no further than zero
       target_positions <- trunc(sign(target_positions) * reduce_by * pmax(abs(target_positions), rep(0, num_assets)))
       trades <- target_positions - current_positions
@@ -144,7 +145,7 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
 
       current_positions <- target_positions
       position_value <- current_positions * current_prices
-      post_trade_cash <- cash + maint_margin - margin*sum(abs(position_value)) - sum(commissions)
+      post_trade_cash <- cash + maint_margin - margin*sum(abs(position_value), na.rm = TRUE) - sum(commissions, na.rm = TRUE)
     } else {
       current_positions <- target_positions
       position_value <- current_positions * current_prices
@@ -152,7 +153,7 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
 
     # update cash and maint_margin
     cash <- post_trade_cash
-    maint_margin <- margin*sum(abs(position_value))
+    maint_margin <- margin*sum(abs(position_value), na.rm = TRUE)
 
     # adjust cash by value of trades
     # cash <- cash - sum(trade_value, na.rm = TRUE) - sum(commissions, na.rm = TRUE)
@@ -170,7 +171,7 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
         c(0, margin*abs(position_value)),
         c(0, funding),
         c(0, trades - liq_contracts),  # minus because we keep sign of original position in liq_contracts
-        c(-sum(trade_value, -liq_trade_value), trade_value-liq_trade_value),
+        c(-sum(trade_value, -liq_trade_value, na.rm = TRUE), trade_value-liq_trade_value),
         c(0, commissions + liq_commissions),
         rep(margin_call, num_assets+1),   # bool will be stored as int (1-0)
         rep(reduced_target_pos, num_assets+1)
