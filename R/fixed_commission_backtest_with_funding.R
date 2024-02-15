@@ -4,6 +4,7 @@
 #' @param target_weights Matrix of theoretical weights. Column 1 must be the timestamp or index.
 #' @param funding_rates Matrix of funding rates applied to positions held at the end of the period in percent per period paid to long positions. Column 1 must be the timestamp or index.
 #' @param trade_buffer Trade buffer parameter
+#' @param margin Percentage of exposure required as margin
 #' @param initial_cash Inital cash balance
 #' @param commission_pct Percent commission charged on trades
 #' @param capitalise_profits If TRUE, utilise profits and initial cash balance in determining position sizes. If FALSE, profits accrue as a cash balance and are not reinvested.
