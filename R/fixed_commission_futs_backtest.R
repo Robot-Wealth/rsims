@@ -478,6 +478,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
         c(interest, rep(0, num_assets)),
         c(0, settled_cash),
         c(0, trades - liq_contracts),  # minus because we keep sign of original position in liq_contracts
+        # I don't think is correct: cash value shouldn't change by value of trades. Set to zero?
         c(-sum(trade_value, -liq_trade_value), trade_value-liq_trade_value),
         c(0, roll_contracts),
         c(NA, ifelse(roll_contracts == 0, NA, current_roll_price)),
