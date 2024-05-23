@@ -1,6 +1,6 @@
 Package: rsims
 Title: Financial Simulation in R
-Version: 1.1.0.15
+Version: 1.1.0.16
 Authors@R: 
     person(given = "Kris",
            family = "Longmore-Dodd",
@@ -19,7 +19,7 @@ Suggests:
     pkgdown,
 Config/testthat/edition: 3
 Imports: 
-    dplyr (>= 1.0.9),
+    dplyr,
     tibble,
     tidyr,
     stringr,

@@ -6,10 +6,11 @@
 \usage{
 fixed_commission_backtest_with_funding(
   prices,
-  theo_weights,
+  target_weights,
   funding_rates,
   trade_buffer = 0,
   initial_cash = 10000,
+  margin = 0.05,
   commission_pct = 0,
   capitalise_profits = FALSE
 )
@@ -17,13 +18,15 @@ fixed_commission_backtest_with_funding(
 \arguments{
 \item{prices}{Matrix of trade prices. Column 1 must be the timestamp or index.}
 
-\item{theo_weights}{Matrix of theoretical weights. Column 1 must be the timestamp or index.}
+\item{target_weights}{Matrix of theoretical weights. Column 1 must be the timestamp or index.}
 
 \item{funding_rates}{Matrix of funding rates applied to positions held at the end of the period in percent per period paid to long positions. Column 1 must be the timestamp or index.}
 
 \item{trade_buffer}{Trade buffer parameter}
 
 \item{initial_cash}{Inital cash balance}
+
+\item{margin}{Percentage of exposure required as margin}
 
 \item{commission_pct}{Percent commission charged on trades}
 
@@ -36,7 +39,7 @@ long dataframe of results - dates, trades, commissions, value of portfolio compo
 Fixed Commission Backtest with Funding
 }
 \details{
-\code{theo_weights} should be date-aligned with \code{prices} - it is up to the user to lag \code{theo_weights} as necessary to
+\code{target_weights} should be date-aligned with \code{prices} - it is up to the user to lag \code{target_weights} as necessary to
 ensure that trades occur at appropriate prices. Specifically, the function assumes that
 \code{target_weights} are date-aligned with \code{prices} such that the price at which
 you assume you trade into a target weight has the same index value.
