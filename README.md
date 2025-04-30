@@ -41,7 +41,7 @@ Examples of wrangling data for input to these functions can be found in the vign
 
 ## Approach to calculating position deltas
 
-Position deltas are calculated using the trade buffer approach. Positions are rebalanced once they deviate from their target by more than a user-supplied `trade_buffer`. Rebalancing happens slightly differently depending on the commission model used:  
+Position deltas are calculated using the trade buffer approach. Positions are rebalanced once they deviate from their target by more than a user-supplied `trade_buffer` percentage of the target weight. Rebalancing happens slightly differently depending on the commission model used:  
 
 - for minimum commission backtesting, rebalance back to the target weight  
 - for fixed commission backtesting, rebalance back to the target weight plus/minus the trade buffer  
