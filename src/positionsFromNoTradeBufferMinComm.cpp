@@ -1,40 +1,52 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
-//' Calculate target positions from theoretical weights and trade buffer parameter in the presence of minimum commission
-//' @export
-// [[Rcpp::export]]
-NumericVector positionsFromNoTradeBufferMinComm(NumericVector current_positions, NumericVector current_prices, NumericVector current_theo_weights, double cap_equity, double trade_buffer) {
-  int num_assets = current_positions.size();
-  NumericVector current_weights(num_assets);
-  NumericVector target_positions(num_assets);
-  std::copy(current_positions.begin(), current_positions.end(), target_positions.begin()) ;
+//' Calculate target positions with a no-trade buffer and min commission logic
+ //' Supports both long and short theoretical weights
+ //'
+ //' If the current weight is within [theo_weight * (1 - buffer), theo_weight * (1 + buffer)],
+ //' no trade is made. If it's outside, the position is adjusted fully to theo_weight.
+ //'
+ //' @export
+ // [[Rcpp::export]]
+ NumericVector positionsFromNoTradeBufferMinComm(NumericVector current_positions,
+                                                 NumericVector current_prices,
+                                                 NumericVector current_theo_weights,
+                                                 double cap_equity,
+                                                 double trade_buffer) {
+   int num_assets = current_positions.size();
+   NumericVector current_weights(num_assets);
+   NumericVector target_positions = clone(current_positions); // Start with current positions
 
-  int j = 0;
-  for(j = 0; j < num_assets; j++)
-  {
-    current_weights[j] = current_positions[j]*current_prices[j]/cap_equity;
-  }
+   // Calculate current weights
+   for (int j = 0; j < num_assets; j++) {
+     current_weights[j] = current_positions[j] * current_prices[j] / cap_equity;
+   }
 
-  for(j = 0; j < num_assets; j++)
-  {
-    //Rprintf(\"%i %f %f \\n\", j, current_theo_weights[j], current_weights[j]);
-    if((R_IsNA(current_theo_weights[j])) | (current_theo_weights[j] == 0))
-      target_positions[j] = 0;
-    else if(current_weights[j] < current_theo_weights[j] - trade_buffer*current_theo_weights[j])
-      target_positions[j] = (current_theo_weights[j])*cap_equity/current_prices[j];
-    else if(current_weights[j] > current_theo_weights[j] + trade_buffer*current_theo_weights[j])
-      target_positions[j] = (current_theo_weights[j])*cap_equity/current_prices[j];
-  }
+   for (int j = 0; j < num_assets; j++) {
+     double theo_weight = current_theo_weights[j];
 
-  return target_positions;
-}
+     // Exit position entirely if NA or zero target weight
+     if (R_IsNA(theo_weight) || theo_weight == 0.0) {
+       target_positions[j] = 0.0;
+       continue;
+     }
 
+     // Compute buffer zone edges
+     double lower_bound = theo_weight * (1.0 - trade_buffer);
+     double upper_bound = theo_weight * (1.0 + trade_buffer);
+     if (lower_bound > upper_bound) std::swap(lower_bound, upper_bound);
 
-// You can include R code blocks in C++ files processed with sourceCpp
-// (useful for testing and development). The R code will be automatically
-// run after the compilation.
-//
+     // Trade to full target only if current weight is outside the buffer zone
+     if (current_weights[j] < lower_bound || current_weights[j] > upper_bound) {
+       target_positions[j] = theo_weight * cap_equity / current_prices[j];
+     }
+     // else: do nothing, keep current position
+   }
+
+   return target_positions;
+ }
+
 
 /*** R
 positionsFromNoTradeBufferMinComm(rep(0, 3), c(8, 11, 3), c(0.5, 0.3, 0.2), 1000, 3, 0.01)

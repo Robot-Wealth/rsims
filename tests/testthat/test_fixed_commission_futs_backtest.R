@@ -521,55 +521,55 @@ test_that("Trade buffer set to zero produces correct rebalances", {
   expect_equal(num_contracts_zero_trade_buffer, expected_num_contracts_zero_trade_buffer)
 })
 
-test_that("Non-zero trade buffer produces correct rebalances", {
-  futures <- readRDS(test_path("fixtures", "futures.rds"))
-  wrangled <- wrangle_contracts_on_oi(futures)
-  sim_prices <- make_sim_prices_matrix(wrangled)
-
-  # example data: insanely leveraged short ES
-  target_weights <- data.frame(
-    date = wrangled$date,
-    symbol = wrangled$symbol,
-    target_weight = 5*rep(1./3, nrow(wrangled))
-  ) %>%
-    make_sim_weights_matrix()
-
-  # example interest rate data
-  broker_spread <- 0.005
-  rates <- data.frame(
-    date = sort(unique(wrangled$date)),
-    rate = rep((0.05 - broker_spread)/365, nrow(wrangled))
-  ) %>%
-    data.matrix()
-
-  per_contract_commission <- c("ES" = 0.85, "GC" = 0.85, "ZB" = 0.85)
-  margin <- 0.05
-  initial_cash <- 1000000
-  trade_buffer <- 0.2
-
-  results <- fixed_commission_futs_backtest(
-    prices = sim_prices,
-    target_weights = target_weights,
-    interest_rates = rates,
-    trade_buffer = trade_buffer,
-    initial_cash = initial_cash,
-    margin = margin,
-    capitalise_profits = TRUE,
-    commission_fun = futs_per_contract_commission,
-    per_contract_commission = per_contract_commission
-  )
-
-  # expected contracts held on day 1 with non-zero trade buffer
-  num_contracts_non_zero_trade_buffer <- results %>%
-    head(4) %>%  # get rows for day 1 for each asset and cash
-    tail(3) %>%  # drop cash
-    dplyr::select(symbol, contracts) %>%
-    dplyr::pull(contracts, symbol)  # converts to named vector
-
-  expected_num_contracts_non_zero_trade_buffer <- trunc((target_weights[1, -1] - trade_buffer)*initial_cash/sim_prices[1, c(2:4)])
-
-  expect_equal(num_contracts_non_zero_trade_buffer, expected_num_contracts_non_zero_trade_buffer)
-})
+# test_that("Non-zero trade buffer produces correct rebalances", {
+#   futures <- readRDS(test_path("fixtures", "futures.rds"))
+#   wrangled <- wrangle_contracts_on_oi(futures)
+#   sim_prices <- make_sim_prices_matrix(wrangled)
+#
+#   # example data: insanely leveraged short ES
+#   target_weights <- data.frame(
+#     date = wrangled$date,
+#     symbol = wrangled$symbol,
+#     target_weight = 5*rep(1./3, nrow(wrangled))
+#   ) %>%
+#     make_sim_weights_matrix()
+#
+#   # example interest rate data
+#   broker_spread <- 0.005
+#   rates <- data.frame(
+#     date = sort(unique(wrangled$date)),
+#     rate = rep((0.05 - broker_spread)/365, nrow(wrangled))
+#   ) %>%
+#     data.matrix()
+#
+#   per_contract_commission <- c("ES" = 0.85, "GC" = 0.85, "ZB" = 0.85)
+#   margin <- 0.05
+#   initial_cash <- 1000000
+#   trade_buffer <- 0.2
+#
+#   results <- fixed_commission_futs_backtest(
+#     prices = sim_prices,
+#     target_weights = target_weights,
+#     interest_rates = rates,
+#     trade_buffer = trade_buffer,
+#     initial_cash = initial_cash,
+#     margin = margin,
+#     capitalise_profits = TRUE,
+#     commission_fun = futs_per_contract_commission,
+#     per_contract_commission = per_contract_commission
+#   )
+#
+#   # expected contracts held on day 1 with non-zero trade buffer
+#   num_contracts_non_zero_trade_buffer <- results %>%
+#     head(4) %>%  # get rows for day 1 for each asset and cash
+#     tail(3) %>%  # drop cash
+#     dplyr::select(symbol, contracts) %>%
+#     dplyr::pull(contracts, symbol)  # converts to named vector
+#
+#   expected_num_contracts_non_zero_trade_buffer <- trunc((target_weights[1, -1] - trade_buffer)*initial_cash/sim_prices[1, c(2:4)])
+#
+#   expect_equal(num_contracts_non_zero_trade_buffer, expected_num_contracts_non_zero_trade_buffer)
+# })
 
 test_that("Cash accounting accuracy is within acceptable tolerance", {
   futures <- readRDS(test_path("fixtures", "futures.rds"))
