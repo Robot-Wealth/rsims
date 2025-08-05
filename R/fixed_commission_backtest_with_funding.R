@@ -108,7 +108,7 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
         sign(current_positions) * liquidate_factor * abs(current_positions),
         sign(current_positions) * abs(current_positions)
       ) # sign() to account for possible short positions
-      liq_trade_value <- liq_contracts*current_price
+      liq_trade_value <- liq_contracts*current_prices
       liq_commissions <- abs(liq_trade_value) * commission_pct
 
       current_positions <- current_positions - liq_contracts
