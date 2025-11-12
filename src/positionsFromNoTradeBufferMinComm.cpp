@@ -32,10 +32,22 @@ using namespace Rcpp;
        continue;
      }
 
+     // If trade_buffer is zero, always rebalance to theo_weight
+     if (trade_buffer == 0.0) {
+       target_positions[j] = theo_weight * cap_equity / current_prices[j];
+       continue;
+     }
+
+     // Calculate buffer size with minimum absolute width to avoid pathological
+     // narrow buffers for small positions. Use 1% for min commission since we
+     // rebalance to center and need wider buffer to account for truncation.
+     const double MIN_ABS_BUFFER = 0.01;  // 1% minimum buffer width
+     double prop_buffer = std::abs(theo_weight) * trade_buffer;
+     double buffer_size = std::max(prop_buffer, MIN_ABS_BUFFER);
+
      // Compute buffer zone edges
-     double lower_bound = theo_weight * (1.0 - trade_buffer);
-     double upper_bound = theo_weight * (1.0 + trade_buffer);
-     if (lower_bound > upper_bound) std::swap(lower_bound, upper_bound);
+     double lower_bound = theo_weight - buffer_size;
+     double upper_bound = theo_weight + buffer_size;
 
      // Trade to full target only if current weight is outside the buffer zone
      if (current_weights[j] < lower_bound || current_weights[j] > upper_bound) {

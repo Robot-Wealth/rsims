@@ -27,12 +27,21 @@ using namespace Rcpp;
        continue;
      }
 
-     // Calculate buffer-aware boundaries
-     double lower_bound = theo_weight * (1.0 - trade_buffer);
-     double upper_bound = theo_weight * (1.0 + trade_buffer);
+     // If trade_buffer is zero, always rebalance to theo_weight
+     if (trade_buffer == 0.0) {
+       target_positions[j] = theo_weight * cap_equity / current_prices[j];
+       continue;
+     }
 
-     // Ensure proper order regardless of sign
-     if (lower_bound > upper_bound) std::swap(lower_bound, upper_bound);
+     // Calculate buffer size with minimum absolute width to avoid pathological
+     // narrow buffers for small positions
+     const double MIN_ABS_BUFFER = 0.005;  // 0.5% minimum buffer width
+     double prop_buffer = std::abs(theo_weight) * trade_buffer;
+     double buffer_size = std::max(prop_buffer, MIN_ABS_BUFFER);
+
+     // Calculate buffer-aware boundaries
+     double lower_bound = theo_weight - buffer_size;
+     double upper_bound = theo_weight + buffer_size;
 
      // Compare and adjust position only if outside bounds
      if (current_weights[j] < lower_bound) {
