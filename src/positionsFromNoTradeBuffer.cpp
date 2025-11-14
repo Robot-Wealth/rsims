@@ -40,8 +40,8 @@ using namespace Rcpp;
      double buffer_size = std::max(prop_buffer, MIN_ABS_BUFFER);
 
      // Calculate buffer-aware boundaries
-     double lower_bound = theo_weight - buffer_size;
-     double upper_bound = theo_weight + buffer_size;
+     double lower_bound = theo_weight - buffer_size/2;
+     double upper_bound = theo_weight + buffer_size/2;
 
      // Compare and adjust position only if outside bounds
      if (current_weights[j] < lower_bound) {

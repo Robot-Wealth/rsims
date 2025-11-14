@@ -46,8 +46,8 @@ using namespace Rcpp;
      double buffer_size = std::max(prop_buffer, MIN_ABS_BUFFER);
 
      // Compute buffer zone edges
-     double lower_bound = theo_weight - buffer_size;
-     double upper_bound = theo_weight + buffer_size;
+     double lower_bound = theo_weight - buffer_size/2;
+     double upper_bound = theo_weight + buffer_size/2;
 
      // Trade to full target only if current weight is outside the buffer zone
      if (current_weights[j] < lower_bound || current_weights[j] > upper_bound) {
