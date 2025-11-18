@@ -219,6 +219,7 @@ make_sim_weights_matrix <- function(weights) {
 #' @param capitalise_profits If TRUE, utilise profits and initial cash balance
 #' in determining position sizes. If FALSE, profits accrue as a cash balance and
 #' are not reinvested.
+#' @param include_initial_state If TRUE, prepends an initial state row (t=0) to the results showing initial cash and zero positions. Defaults to FALSE for backward compatibility.
 #' @param commission_fun Function for determining commissions from prices and
 #' trades
 #' @param ... Additional arguments passed to commission_fun. For
@@ -288,7 +289,7 @@ make_sim_weights_matrix <- function(weights) {
 #'     per_contract_commission = per_contract_commission
 #'  )
 #' }
-fixed_commission_futs_backtest <- function(prices, target_weights, interest_rates, trade_buffer = 0., initial_cash = 10000, margin = 0.05, capitalise_profits = FALSE, commission_fun, ...) {
+fixed_commission_futs_backtest <- function(prices, target_weights, interest_rates, trade_buffer = 0., initial_cash = 10000, margin = 0.05, capitalise_profits = FALSE, include_initial_state = FALSE, commission_fun, ...) {
   num_assets <- ncol(target_weights) - 1
   symbols <- colnames(target_weights)[-1]
 
@@ -512,6 +513,36 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
     previous_weights <- current_weights
     previous_price <- current_price
     previous_roll_price <- current_roll_price
+  }
+
+  # Optionally prepend initial state (t=0)
+  if(include_initial_state) {
+    initial_row <- matrix(
+      data = c(
+        rep(as.numeric(prices[1, 1]), num_assets+1),   # Use first date
+        c(0, prices[1, 2:(num_assets+1)]),              # Current contract prices at t=0
+        rep(0, num_assets+1),                           # Zero contracts
+        c(initial_cash, rep(0, num_assets)),            # Initial cash only
+        rep(0, num_assets+1),                           # No margin
+        rep(0, num_assets+1),                           # No interest
+        rep(0, num_assets+1),                           # No settled cash
+        rep(0, num_assets+1),                           # No trades
+        rep(0, num_assets+1),                           # No trade value
+        rep(0, num_assets+1),                           # No rolled contracts
+        rep(NA, num_assets+1),                          # No roll price
+        rep(0, num_assets+1),                           # No commission
+        rep(FALSE, num_assets+1),                       # No margin call
+        rep(FALSE, num_assets+1)                        # No reduced target
+      ),
+      nrow = num_assets + 1,
+      ncol = 14,
+      byrow = FALSE,
+      dimnames = list(
+        c("Cash", symbols),
+        c("date", "close", "contracts", "exposure", "margin", "interest", "settled_cash", "contract_trades", "trade_value", "rolled_contracts", "roll_price", "commission", "margin_call", "reduced_target_pos")
+      )
+    )
+    rowlist <- c(list(initial_row), rowlist)
   }
 
   # Combine list of matrixes into dataframe

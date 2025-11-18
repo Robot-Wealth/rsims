@@ -6,6 +6,7 @@
 #' @param initial_cash Inital cash balance
 #' @param commission_pct Percent commission charged on trades
 #' @param capitalise_profits If TRUE, utilise profits and initial cash balance in determining position sizes. If FALSE, profits accrue as a cash balance and are not reinvested.
+#' @param include_initial_state If TRUE, prepends an initial state row (t=0) to the results showing initial cash and zero positions. Defaults to FALSE for backward compatibility.
 #'
 #' @return long dataframe of results - dates, trades, commissions, value of portfolio components
 #' @details
@@ -13,7 +14,7 @@
 #' ensure that trades occur at appropriate prices.
 #' @examples
 #' @export
-fixed_commission_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash = 10000, commission_pct = 0, capitalise_profits = FALSE) {
+fixed_commission_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash = 10000, commission_pct = 0, capitalise_profits = FALSE, include_initial_state = FALSE) {
   if(trade_buffer < 0)
     stop("trade_buffer must be greater than or equal to zero")
 
@@ -94,6 +95,29 @@ fixed_commission_backtest <- function(prices, theo_weights, trade_buffer = 0., i
     row_list[[i]] <- row_mat
 
     previous_theo_weights <- current_theo_weights
+  }
+
+  # Optionally prepend initial state (t=0)
+  if(include_initial_state) {
+    initial_row <- matrix(
+      data = c(
+        rep(as.numeric(prices[1, 1]), num_assets + 1),  # Use first date
+        c(1, prices[1, -1]),                             # Prices at t=0
+        rep(0, num_assets + 1),                          # Zero positions
+        c(initial_cash, rep(0, num_assets)),             # Initial cash only
+        rep(0, num_assets + 1),                          # No trades
+        rep(0, num_assets + 1),                          # No trade value
+        rep(0, num_assets + 1)                           # No commission
+      ),
+      nrow = num_assets + 1,
+      ncol = 7,
+      byrow = FALSE,
+      dimnames = list(
+        c("Cash", tickers),
+        c("Date", "Close", "Position", "Value", "Trades", "TradeValue", "Commission")
+      )
+    )
+    row_list <- c(list(initial_row), row_list)
   }
 
   # Combine list of matrixes into dataframe

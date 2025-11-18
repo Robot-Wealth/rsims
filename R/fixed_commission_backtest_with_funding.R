@@ -8,6 +8,7 @@
 #' @param initial_cash Inital cash balance
 #' @param commission_pct Percent commission charged on trades
 #' @param capitalise_profits If TRUE, utilise profits and initial cash balance in determining position sizes. If FALSE, profits accrue as a cash balance and are not reinvested.
+#' @param include_initial_state If TRUE, prepends an initial state row (t=0) to the results showing initial cash and zero positions. Defaults to FALSE for backward compatibility.
 #'
 #' @return long dataframe of results - dates, trades, commissions, value of portfolio components
 #' @details
@@ -19,7 +20,7 @@
 #' `funding_rates` represents daily funding accrued to positions at the end of the period in percent per period paid to longs.
 #' @examples
 #' @export
-fixed_commission_backtest_with_funding <- function(prices, target_weights, funding_rates, trade_buffer = 0., initial_cash = 10000, margin = 0.05, commission_pct = 0, capitalise_profits = FALSE) {
+fixed_commission_backtest_with_funding <- function(prices, target_weights, funding_rates, trade_buffer = 0., initial_cash = 10000, margin = 0.05, commission_pct = 0, capitalise_profits = FALSE, include_initial_state = FALSE) {
   if(trade_buffer < 0)
     stop("trade_buffer must be greater than or equal to zero")
 
@@ -209,6 +210,34 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
 
     previous_target_weights <- current_target_weights
     previous_prices <- current_prices
+  }
+
+  # Optionally prepend initial state (t=0)
+  if(include_initial_state) {
+    initial_row <- matrix(
+      data = c(
+        rep(as.numeric(prices[1, 1]), num_assets+1),   # Use first date
+        c(prices[1, -1], 0),                            # Prices at t=0
+        c(rep(0, num_assets), initial_cash),            # Zero positions, initial cash
+        c(rep(0, num_assets), initial_cash),            # Zero value, initial cash
+        rep(0, num_assets+1),                           # No margin
+        rep(0, num_assets+1),                           # No funding
+        rep(0, num_assets+1),                           # No period PnL
+        rep(0, num_assets+1),                           # No trades
+        rep(0, num_assets+1),                           # No trade value
+        rep(0, num_assets+1),                           # No commission
+        rep(FALSE, num_assets+1),                       # No margin call
+        rep(FALSE, num_assets+1)                        # No reduced target
+      ),
+      nrow = num_assets + 1,
+      ncol = 12,
+      byrow = FALSE,
+      dimnames = list(
+        c(tickers, "Cash"),
+        c("Date", "Close", "Position", "Value", "Margin", "Funding", "PeriodPnL", "Trades", "TradeValue", "Commission", "MarginCall", "ReducedTargetPos")
+      )
+    )
+    row_list <- c(list(initial_row), row_list)
   }
 
   # Combine list of matrixes into dataframe
