@@ -22,6 +22,8 @@ using namespace Rcpp;
    for (int j = 0; j < num_assets; j++) {
      double theo_weight = current_theo_weights[j];
 
+     // Exit position entirely if NA or zero target weight
+     // No buffer when target is zero - always rebalance to flat
      if (R_IsNA(theo_weight) || theo_weight == 0.0) {
        target_positions[j] = 0.0;
        continue;
@@ -33,17 +35,21 @@ using namespace Rcpp;
        continue;
      }
 
-     // Calculate buffer size with minimum absolute width to avoid pathological
-     // narrow buffers for small positions
-     const double MIN_ABS_BUFFER = 0.005;  // 0.5% minimum buffer width
-     double prop_buffer = std::abs(theo_weight) * trade_buffer;
-     double buffer_size = std::max(prop_buffer, MIN_ABS_BUFFER);
+     // Calculate buffer bounds using absolute deviation approach
+     // trade_buffer represents total width, so half-width on each side
+     double lower_bound = theo_weight - trade_buffer/2;
+     double upper_bound = theo_weight + trade_buffer/2;
 
-     // Calculate buffer-aware boundaries
-     double lower_bound = theo_weight - buffer_size/2;
-     double upper_bound = theo_weight + buffer_size/2;
+     // Clip bounds at zero to prevent holding positions with wrong sign
+     if (theo_weight > 0) {
+       // Long target: don't allow buffer to go negative
+       lower_bound = std::max(0.0, lower_bound);
+     } else {
+       // Short target: don't allow buffer to go positive
+       upper_bound = std::min(0.0, upper_bound);
+     }
 
-     // Compare and adjust position only if outside bounds
+     // Rebalance to edge of buffer if outside bounds (optimal for fixed commission)
      if (current_weights[j] < lower_bound) {
        target_positions[j] = lower_bound * cap_equity / current_prices[j];
      } else if (current_weights[j] > upper_bound) {

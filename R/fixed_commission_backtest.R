@@ -24,6 +24,13 @@ fixed_commission_backtest <- function(prices, theo_weights, trade_buffer = 0., i
   if(!all.equal(dim(prices), dim(theo_weights)))
     stop("Prices and weights matrixes must have same dimensions")
 
+  # Validate that NA prices don't occur where we want to trade
+  na_price_with_weight <- is.na(prices[, -1]) & theo_weights[, -1] != 0
+  if(any(na_price_with_weight, na.rm = TRUE)) {
+    problem_rows <- which(apply(na_price_with_weight, 1, any))
+    stop(glue::glue("NA prices detected where theo_weights is non-zero at row(s): {paste(problem_rows, collapse=', ')}. Fix upstream data."))
+  }
+
   # get tickers for later
   tickers <- colnames(prices)[-1]
 
@@ -69,8 +76,8 @@ fixed_commission_backtest <- function(prices, theo_weights, trade_buffer = 0., i
         c(1, current_prices),
         c(cash, current_positions),
         c(cash, position_value),
-        c(-sum(trade_value), trades),
-        c(-sum(trade_value), trade_value),
+        c(-sum(trade_value, na.rm = TRUE), trades),
+        c(-sum(trade_value, na.rm = TRUE), trade_value),
         c(0, commissions)
       ),
       nrow = num_assets + 1,

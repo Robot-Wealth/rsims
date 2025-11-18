@@ -27,6 +27,7 @@ using namespace Rcpp;
      double theo_weight = current_theo_weights[j];
 
      // Exit position entirely if NA or zero target weight
+     // No buffer when target is zero - always rebalance to flat
      if (R_IsNA(theo_weight) || theo_weight == 0.0) {
        target_positions[j] = 0.0;
        continue;
@@ -38,16 +39,19 @@ using namespace Rcpp;
        continue;
      }
 
-     // Calculate buffer size with minimum absolute width to avoid pathological
-     // narrow buffers for small positions. Use 1% for min commission since we
-     // rebalance to center and need wider buffer to account for truncation.
-     const double MIN_ABS_BUFFER = 0.01;  // 1% minimum buffer width
-     double prop_buffer = std::abs(theo_weight) * trade_buffer;
-     double buffer_size = std::max(prop_buffer, MIN_ABS_BUFFER);
+     // Calculate buffer bounds using absolute deviation approach
+     // trade_buffer represents total width, so half-width on each side
+     double lower_bound = theo_weight - trade_buffer/2;
+     double upper_bound = theo_weight + trade_buffer/2;
 
-     // Compute buffer zone edges
-     double lower_bound = theo_weight - buffer_size/2;
-     double upper_bound = theo_weight + buffer_size/2;
+     // Clip bounds at zero to prevent holding positions with wrong sign
+     if (theo_weight > 0) {
+       // Long target: don't allow buffer to go negative
+       lower_bound = std::max(0.0, lower_bound);
+     } else {
+       // Short target: don't allow buffer to go positive
+       upper_bound = std::min(0.0, upper_bound);
+     }
 
      // Trade to full target only if current weight is outside the buffer zone
      if (current_weights[j] < lower_bound || current_weights[j] > upper_bound) {
