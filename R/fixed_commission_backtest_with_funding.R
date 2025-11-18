@@ -37,6 +37,13 @@ fixed_commission_backtest_with_funding <- function(prices, target_weights, fundi
   if(!all.equal(dim(prices), dim(funding_rates)))
     stop("Prices and funding matrixes must have same dimensions")
 
+  # Validate that NA prices don't occur where we want to trade
+  na_price_with_weight <- is.na(prices[, -1]) & target_weights[, -1] != 0
+  if(any(na_price_with_weight, na.rm = TRUE)) {
+    problem_rows <- which(apply(na_price_with_weight, 1, any))
+    stop(glue::glue("NA prices detected where target_weights is non-zero at row(s): {paste(problem_rows, collapse=', ')}. Fix upstream data."))
+  }
+
   # check for NA in weights and funding matrixes
   if(any(is.na(target_weights))) {
     warning("NA present in target weights: consider replacing these values before continuing")

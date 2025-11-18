@@ -116,6 +116,13 @@ fractional_min_commission_backtest <- function(prices, unadjusted_prices, target
   if(!all.equal(dim(prices), dim(target_weights)))
     stop("Prices and weights matrixes must have same dimensions")
 
+  # Validate that NA prices don't occur where we want to trade
+  na_price_with_weight <- is.na(prices[, -1]) & target_weights[, -1] != 0
+  if(any(na_price_with_weight, na.rm = TRUE)) {
+    problem_rows <- which(apply(na_price_with_weight, 1, any))
+    stop(glue::glue("NA prices detected where target_weights is non-zero at row(s): {paste(problem_rows, collapse=', ')}. Fix upstream data."))
+  }
+
   if(is.null(interest_rates)) {
     interest_rates <- matrix(
       data = c(prices[, 1], rep(0, nrow(prices))),
@@ -162,21 +169,21 @@ fractional_min_commission_backtest <- function(prices, unadjusted_prices, target
     short_borrow <- short_borrow_costs/365 * ifelse(share_pos >= 0, 0, share_pos*current_price)
 
     # update cash and total equity
-    Cash <- Cash + interest + sum(short_borrow)
-    equity <- sum(share_pos * current_price) + Cash
+    Cash <- Cash + interest + sum(short_borrow, na.rm = TRUE)
+    equity <- sum(share_pos * current_price, na.rm = TRUE) + Cash
 
     if(equity > 0) {
       # force reduce position if exceeds maintenance margin requirements
       margin_call <- FALSE
       liq_shares <- rep(0, num_assets)
       liq_commissions <- rep(0, num_assets)
-      if(equity < MAINT_MARGIN*sum(abs(share_pos) * current_price)) {
+      if(equity < MAINT_MARGIN*sum(abs(share_pos) * current_price, na.rm = TRUE)) {
         margin_call <- TRUE
 
         # liquidate equal proportions of each share holding
         # liquidate 5% extra to requirement for bringing positions into line with margin requirement
         # liq_fac = 1 - (max_pos_val)/(current_pos_val) where max_pos_val = equity/MM
-        liquidate_factor <- 1 - 1.05*(equity)/(MAINT_MARGIN)/(sum(abs(share_pos) * current_price))
+        liquidate_factor <- 1 - 1.05*(equity)/(MAINT_MARGIN)/(sum(abs(share_pos) * current_price, na.rm = TRUE))
 
         # liquidate equal proportions of each contract (probably not how broker would actually do it)
         # but only liquidate a maximum amount of existing positions
@@ -187,10 +194,10 @@ fractional_min_commission_backtest <- function(prices, unadjusted_prices, target
 
         liq_commissions <- commission_fun(liq_shares, current_price, current_unadjprice, ...)
 
-        Cash <- Cash - sum(liq_shares*current_price) - sum(liq_commissions)
+        Cash <- Cash - sum(liq_shares*current_price, na.rm = TRUE) - sum(liq_commissions, na.rm = TRUE)
         share_pos <- share_pos + liq_shares
         share_value <- share_pos * current_price
-        equity <- sum(share_value) + Cash
+        equity <- sum(share_value, na.rm = TRUE) + Cash
       }
 
       # Capitalise profits
@@ -208,14 +215,14 @@ fractional_min_commission_backtest <- function(prices, unadjusted_prices, target
 
       # can we do proposed trades?
       # Can we do proposed trades given NAV and MM? If not, adjust trade size, value, commissions etc
-      post_trade_equity <- sum(target_shares*current_price) + Cash - sum(trade_value) - sum(commissions)
-      post_trade_margin <- MAINT_MARGIN*sum(abs(target_shares)*current_price)
+      post_trade_equity <- sum(target_shares*current_price, na.rm = TRUE) + Cash - sum(trade_value, na.rm = TRUE) - sum(commissions, na.rm = TRUE)
+      post_trade_margin <- MAINT_MARGIN*sum(abs(target_shares)*current_price, na.rm = TRUE)
       reduced_target_pos <- FALSE
       if(post_trade_equity < post_trade_margin) {
         reduced_target_pos <- TRUE
         # adjust trade sizes
-        max_post_trade_shareval <- max((equity - sum(commissions))/MAINT_MARGIN, 0)
-        reduce_by <- 1 - max_post_trade_shareval/sum(abs(target_shares)*current_price)
+        max_post_trade_shareval <- max((equity - sum(commissions, na.rm = TRUE))/MAINT_MARGIN, 0)
+        reduce_by <- 1 - max_post_trade_shareval/sum(abs(target_shares)*current_price, na.rm = TRUE)
 
         reduce_shares <- -sign(target_shares) * pmin(
           reduce_by * abs(target_shares),  # deal in fractional number of contracts
@@ -230,10 +237,10 @@ fractional_min_commission_backtest <- function(prices, unadjusted_prices, target
       }
 
       # Adjust cash by value of trades
-      Cash <- Cash - sum(trade_value) - sum(commissions)
+      Cash <- Cash - sum(trade_value, na.rm = TRUE) - sum(commissions, na.rm = TRUE)
       share_pos <- target_shares
       share_value <- share_pos * current_price
-      equity <- sum(share_value) + Cash
+      equity <- sum(share_value, na.rm = TRUE) + Cash
 
       if(equity <= 0) {  # rekt
         share_pos <- rep(0, num_assets)
@@ -269,7 +276,7 @@ fractional_min_commission_backtest <- function(prices, unadjusted_prices, target
         c(0, share_pos),
         c(Cash, share_value),
         c(0, trades + liq_shares),
-        c(-sum(trade_value), trade_value),
+        c(-sum(trade_value, na.rm = TRUE), trade_value),
         c(0, commissions + liq_commissions),
         c(interest, rep(0, num_assets)),
         c(0, short_borrow),

@@ -303,6 +303,16 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
   if(length(misaligned_timestamps) > 0)
     stop(glue::glue("Timestamps of prices and rates matrixes are misaligned"))
 
+  # Validate that NA prices don't occur where we want to trade
+  # For futures, check all three price columns per symbol
+  price_cols_current <- grep("close_current_contract_", colnames(prices), value = TRUE)
+  prices_current <- prices[, price_cols_current]
+  na_price_with_weight <- is.na(prices_current) & target_weights[, -1] != 0
+  if(any(na_price_with_weight, na.rm = TRUE)) {
+    problem_rows <- which(apply(na_price_with_weight, 1, any))
+    stop(glue::glue("NA prices detected where target_weights is non-zero at row(s): {paste(problem_rows, collapse=', ')}. Fix upstream data."))
+  }
+
   # check for NA in weights and rates matrixes
   if(any(is.na(target_weights))) {
     warning("NA present in target weights: consider replacing these values before continuing")
@@ -375,13 +385,13 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
     interest <- current_interest_rate * Cash
 
     # update cash balance - includes adding back yesterday's margin and deducting today's margin
-    # Cash <- Cash + sum(settled_cash) + interest + sum(freed_margin) - maint_margin - sum(roll_commissions)
-    Cash <- Cash + sum(settled_cash) + interest + maint_margin - margin*sum(abs(contract_pos)*current_price) - sum(roll_commissions)
+    # Cash <- Cash + sum(settled_cash, na.rm = TRUE) + interest + sum(freed_margin, na.rm = TRUE) - maint_margin - sum(roll_commissions, na.rm = TRUE)
+    Cash <- Cash + sum(settled_cash, na.rm = TRUE) + interest + maint_margin - margin*sum(abs(contract_pos)*current_price, na.rm = TRUE) - sum(roll_commissions, na.rm = TRUE)
 
     # update margin requirements
     # TODO: assumption: each contract has same maintenance margin requirements
     contract_value <- contract_pos * current_price  # contract_pos is zero here for anything we rolled out of today
-    maint_margin <- margin * sum(abs(contract_value))
+    maint_margin <- margin * sum(abs(contract_value), na.rm = TRUE)
 
     # force reduce position if exceeds maintenance margin requirements
     margin_call <- FALSE
@@ -408,11 +418,11 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
       contract_value <- contract_pos * current_price
 
       # account for freed margin
-      # freed_margin <- margin*sum(abs(liq_contracts)*current_price)
-      # Cash <- Cash + freed_margin - sum(liq_commissions)
-      Cash <- Cash + maint_margin -margin*sum(abs(contract_value)) - sum(liq_commissions)
+      # freed_margin <- margin*sum(abs(liq_contracts)*current_price, na.rm = TRUE)
+      # Cash <- Cash + freed_margin - sum(liq_commissions, na.rm = TRUE)
+      Cash <- Cash + maint_margin -margin*sum(abs(contract_value), na.rm = TRUE) - sum(liq_commissions, na.rm = TRUE)
 
-      maint_margin <- margin * sum(abs(contract_value))
+      maint_margin <- margin * sum(abs(contract_value), na.rm = TRUE)
     }
 
     # capitalise profits/losses
@@ -436,7 +446,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
 
     # post-trade cash:  cash freed up from closing position, cash used as margin, commissions
     target_contract_value <- target_contracts * current_price
-    post_trade_cash <- Cash + maint_margin - margin*sum(abs(target_contract_value)) - sum(commissions)
+    post_trade_cash <- Cash + maint_margin - margin*sum(abs(target_contract_value), na.rm = TRUE) - sum(commissions, na.rm = TRUE)
 
     reduced_target_pos <- FALSE
     if(post_trade_cash < 0) {
@@ -446,9 +456,9 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
       # Cash + freed_margin - post_trade_margin - commissions = 0
       # setting commissions to the value calculated for full trade size above (will be conservative), we get:
       # max_post_trade_contracts_value = (cash + freed_margin - commissions)/margin_requirement
-      max_post_trade_contracts_value <- 0.95*(Cash + maint_margin - sum(commissions))/margin
+      max_post_trade_contracts_value <- 0.95*(Cash + maint_margin - sum(commissions, na.rm = TRUE))/margin
 
-      reduce_by <-  max_post_trade_contracts_value/sum(abs(target_contract_value))
+      reduce_by <-  max_post_trade_contracts_value/sum(abs(target_contract_value), na.rm = TRUE)
       # ensure doesn't change sign from intended, but we only reduce target contracts no further than zero
       target_contracts <- trunc(sign(target_contracts) * reduce_by * pmax(abs(target_contracts), rep(0, num_assets)))
       trades <- target_contracts - contract_pos
@@ -457,7 +467,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
 
       contract_pos <- target_contracts
       contract_value <- contract_pos * current_price
-      post_trade_cash <- Cash + maint_margin - margin*sum(abs(contract_value)) - sum(commissions)
+      post_trade_cash <- Cash + maint_margin - margin*sum(abs(contract_value), na.rm = TRUE) - sum(commissions, na.rm = TRUE)
     } else {
       contract_pos <- target_contracts
       contract_value <- contract_pos * current_price
@@ -465,7 +475,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
 
     # update Cash and maint_margin
     Cash <- post_trade_cash
-    maint_margin <- margin*sum(abs(contract_value))
+    maint_margin <- margin*sum(abs(contract_value), na.rm = TRUE)
 
     # store date in matrix as numeric, then convert back to date format with as.Date(date_col, origin ="1970-01-01")
     row_mat <- matrix(
@@ -479,7 +489,7 @@ fixed_commission_futs_backtest <- function(prices, target_weights, interest_rate
         c(0, settled_cash),
         c(0, trades - liq_contracts),  # minus because we keep sign of original position in liq_contracts
         # I don't think is correct: cash value shouldn't change by value of trades. Set to zero?
-        c(-sum(trade_value, -liq_trade_value), trade_value-liq_trade_value),
+        c(-sum(trade_value, -liq_trade_value, na.rm = TRUE), trade_value-liq_trade_value),
         c(0, roll_contracts),
         c(NA, ifelse(roll_contracts == 0, NA, current_roll_price)),
         c(0, commissions + liq_commissions + roll_commissions),
