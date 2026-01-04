@@ -2,7 +2,7 @@
 % Please edit documentation in R/post_processing.R
 \name{combine_port_asset_returns}
 \alias{combine_port_asset_returns}
-\title{Combine portfolio anda asset returns}
+\title{Combine portfolio and asset returns}
 \usage{
 combine_port_asset_returns(results_df, returns_df)
 }
@@ -15,5 +15,5 @@ combine_port_asset_returns(results_df, returns_df)
 Combined dataframe of portfolio and asset returns
 }
 \description{
-Combine portfolio anda asset returns
+Combine portfolio and asset returns
 }

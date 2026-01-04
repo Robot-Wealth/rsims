@@ -10,7 +10,8 @@ fixed_commission_backtest(
   trade_buffer = 0,
   initial_cash = 10000,
   commission_pct = 0,
-  capitalise_profits = FALSE
+  capitalise_profits = FALSE,
+  include_initial_state = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ fixed_commission_backtest(
 \item{commission_pct}{Percent commission charged on trades}
 
 \item{capitalise_profits}{If TRUE, utilise profits and initial cash balance in determining position sizes. If FALSE, profits accrue as a cash balance and are not reinvested.}
+
+\item{include_initial_state}{If TRUE, prepends an initial state row (t=0) to the results showing initial cash and zero positions. Defaults to FALSE for backward compatibility.}
 }
 \value{
 long dataframe of results - dates, trades, commissions, value of portfolio components

@@ -133,4 +133,5 @@ fixed_commission_backtest <- function(prices, theo_weights, trade_buffer = 0., i
 #' @export
 cash_backtest <- function(prices, theo_weights, trade_buffer = 0., initial_cash = 10000, commission_pct = 0, capitalise_profits = FALSE) {
   fixed_commission_backtest(prices, theo_weights, trade_buffer, initial_cash, commission_pct, capitalise_profits)
+
 }

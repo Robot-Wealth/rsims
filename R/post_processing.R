@@ -122,7 +122,7 @@ append_nav_to_bt_results <- function(bt_results_df) {
   port_nav <- bt_results_df %>%
     dplyr::select(date, exposure, ticker) %>%
     dplyr::group_by(date) %>%
-    dplyr::summarise(exposure = sum(exposure)) %>%
+    dplyr::summarise(exposure = sum(exposure, na.rm = TRUE)) %>%
     dplyr::mutate(ticker = "NAV")
 
   bt_results_df %>%
@@ -415,7 +415,7 @@ comm_pct_exp_chart <- function(results_df, title, fill_scale, colour_scale) {
     )
 }
 
-#' Combine portfolio anda asset returns
+#' Combine portfolio and asset returns
 #'
 #' @param results_df Results dataframe from rsims backtest
 #' @param returns_df Dataframe of asset returns

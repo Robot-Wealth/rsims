@@ -12,6 +12,7 @@ fixed_commission_futs_backtest(
   initial_cash = 10000,
   margin = 0.05,
   capitalise_profits = FALSE,
+  include_initial_state = FALSE,
   commission_fun,
   ...
 )
@@ -43,6 +44,8 @@ a constant value for all assets.}
 \item{capitalise_profits}{If TRUE, utilise profits and initial cash balance
 in determining position sizes. If FALSE, profits accrue as a cash balance and
 are not reinvested.}
+
+\item{include_initial_state}{If TRUE, prepends an initial state row (t=0) to the results showing initial cash and zero positions. Defaults to FALSE for backward compatibility.}
 
 \item{commission_fun}{Function for determining commissions from prices and
 trades}

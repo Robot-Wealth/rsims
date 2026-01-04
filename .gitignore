@@ -7,3 +7,8 @@ inst/doc
 /doc/
 /Meta/
 docs/*
+.claude/
+CLAUDE.md
+data/
+ftx/
+notes.txt

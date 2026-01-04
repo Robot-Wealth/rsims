@@ -13,6 +13,7 @@ min_commission_backtest(
   trade_buffer = 0,
   initial_cash = 10000,
   capitalise_profits = FALSE,
+  include_initial_state = FALSE,
   commission_fun,
   ...
 )
@@ -40,6 +41,8 @@ TLT. Defaults to zero.}
 \item{initial_cash}{Inital cash balance}
 
 \item{capitalise_profits}{If TRUE, utilise profits and initial cash balance in determining position sizes. If FALSE, profits accrue as a cash balance and are not reinvested.}
+
+\item{include_initial_state}{If TRUE, prepends an initial state row (t=0) to the results showing initial cash and zero positions. Defaults to FALSE for backward compatibility.}
 
 \item{commission_fun}{Function for determining commissions from prices and
 trades}
