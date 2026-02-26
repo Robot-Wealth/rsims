@@ -25,6 +25,8 @@
 #' @param interest_rates Matrix of daily interest rates applied to unused cash
 #' (positive interest) and borrowed cash (negative interest). If not passed,
 #' assumes constant interest rate of zero.
+#' Symmetric broker spread of 1.5% pa applied to both credit and debit cash balances.
+#' Conservative for large accounts; asymmetric in reality (debit spread > credit spread).
 #' @param short_borrow_costs Named vector of annualised short borrow costs as percent. For
 #' example, c("TLT" = 0.0025) is equivalent to a short borrow cost of 0.25%pa for
 #' TLT. Defaults to zero.
@@ -104,7 +106,7 @@
 min_commission_backtest <- function(prices, unadjusted_prices, target_weights, interest_rates = NULL, short_borrow_costs = NULL, trade_buffer = 0., initial_cash = 10000, capitalise_profits = FALSE, include_initial_state = FALSE, commission_fun, ...) {
 
   MAINT_MARGIN <- 0.25
-  broker_interest_spread <- 0.5/(100*365)
+  broker_interest_spread <- 1.5/(100*365)
 
   if(trade_buffer < 0)
     stop("trade_buffer must be greater than or equal to zero")
