@@ -19,6 +19,9 @@ days_to_expiry <- function(contracts) {
   if("expiry" %in% colnames(contracts)) {
     warning("Using existing expiry column")
 
+    contracts <- contracts %>%
+      dplyr::mutate(dte = expiry - date)
+
     return(contracts)
   }
 
