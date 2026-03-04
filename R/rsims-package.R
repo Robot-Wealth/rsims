@@ -1,4 +1,3 @@
-## usethis namespace: start
+#' @useDynLib rsims, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
-## usethis namespace: end
 NULL

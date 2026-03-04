@@ -30,7 +30,9 @@ timestamp or index.}
 
 \item{interest_rates}{Matrix of daily interest rates applied to unused cash
 (positive interest) and borrowed cash (negative interest). If not passed,
-assumes constant interest rate of zero.}
+assumes constant interest rate of zero.
+Symmetric broker spread of 1.5\% pa applied to both credit and debit cash balances.
+Conservative for large accounts; asymmetric in reality (debit spread > credit spread).}
 
 \item{short_borrow_costs}{Named vector of annualised short borrow costs as percent. For
 example, c("TLT" = 0.0025) is equivalent to a short borrow cost of 0.25\%pa for

@@ -16,6 +16,12 @@ days_to_expiry <- function(contracts) {
     "ticker column must exist" = "ticker" %in% colnames(contracts)
     )
 
+  if("expiry" %in% colnames(contracts)) {
+    warning("Using existing expiry column")
+
+    return(contracts)
+  }
+
   contracts %>%
     dplyr::left_join(
       contracts %>%

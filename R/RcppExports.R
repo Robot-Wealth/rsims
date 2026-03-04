@@ -5,13 +5,13 @@
 NULL
 
 positionsFromNoTradeBuffer <- function(current_positions, current_prices, current_theo_weights, cap_equity, trade_buffer) {
-    .Call('_rsims_positionsFromNoTradeBuffer', PACKAGE = 'rsims', current_positions, current_prices, current_theo_weights, cap_equity, trade_buffer)
+    .Call(`_rsims_positionsFromNoTradeBuffer`, current_positions, current_prices, current_theo_weights, cap_equity, trade_buffer)
 }
 
 #' Calculate target positions with a no-trade buffer and min commission logic
 NULL
 
 positionsFromNoTradeBufferMinComm <- function(current_positions, current_prices, current_theo_weights, cap_equity, trade_buffer) {
-    .Call('_rsims_positionsFromNoTradeBufferMinComm', PACKAGE = 'rsims', current_positions, current_prices, current_theo_weights, cap_equity, trade_buffer)
+    .Call(`_rsims_positionsFromNoTradeBufferMinComm`, current_positions, current_prices, current_theo_weights, cap_equity, trade_buffer)
 }
 

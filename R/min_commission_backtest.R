@@ -106,7 +106,7 @@
 min_commission_backtest <- function(prices, unadjusted_prices, target_weights, interest_rates = NULL, short_borrow_costs = NULL, trade_buffer = 0., initial_cash = 10000, capitalise_profits = FALSE, include_initial_state = FALSE, commission_fun, ...) {
 
   MAINT_MARGIN <- 0.25
-  broker_interest_spread <- 1.5/(100*365)
+  broker_interest_spread <- 1.0/(100*365)
 
   if(trade_buffer < 0)
     stop("trade_buffer must be greater than or equal to zero")
@@ -148,6 +148,7 @@ min_commission_backtest <- function(prices, unadjusted_prices, target_weights, i
   rowlist <- vector(mode = "list", length = nrow(target_weights))  # preallocate list to store daily backtest data
 
   Cash <- initial_cash
+  short_proceeds_collateral <- 0  # track short sale proceeds that are held as collateral and not available for trading or accruing interest
   share_pos <- rep(0, num_assets)
   share_value <- rep(0, num_assets)
   cap_equity <- initial_cash
@@ -161,11 +162,12 @@ min_commission_backtest <- function(prices, unadjusted_prices, target_weights, i
     current_unadjprice <- unadjusted_prices[i, -1]
     current_interest_rate <- ifelse(is.na(interest_rates[i, -1]), 0, interest_rates[i, -1])
 
-    # interest is accrued on yesterday's cash balance at today's rate
+    # interest is accrued on yesterday's cash (that isn't a short sale proceed) balance at today's rate
+    interest_bearing_cash = Cash - short_proceeds_collateral
     interest <- ifelse(
-      Cash > 0,
-      max(0, (current_interest_rate-broker_interest_spread)) * Cash,
-      (current_interest_rate+broker_interest_spread)*Cash
+      interest_bearing_cash > 0,
+      max(0, (current_interest_rate-broker_interest_spread)) * interest_bearing_cash,
+      (current_interest_rate+broker_interest_spread)*interest_bearing_cash
     )
     # short borrow is debited based on holding yesterday's positions to today's close
     short_borrow <- short_borrow_costs/365 * ifelse(share_pos >= 0, 0, share_pos*current_price)
@@ -243,6 +245,8 @@ min_commission_backtest <- function(prices, unadjusted_prices, target_weights, i
       share_pos <- target_shares
       share_value <- share_pos * current_price
       equity <- sum(share_value, na.rm = TRUE) + Cash
+      short_position_market_values <- ifelse(share_pos < 0, share_pos*current_price, 0)
+      short_proceeds_collateral = sum(abs(short_position_market_values))
 
       if(equity <= 0) {  # rekt
         share_pos <- rep(0, num_assets)
@@ -255,6 +259,7 @@ min_commission_backtest <- function(prices, unadjusted_prices, target_weights, i
         interest <- 0
         equity <- 0
         Cash <- 0
+        short_proceeds_collateral <- 0
       }
 
     } else {  # rekt
@@ -268,6 +273,7 @@ min_commission_backtest <- function(prices, unadjusted_prices, target_weights, i
       interest <- 0
       equity <- 0
       Cash <- 0
+      short_proceeds_collateral <- 0
     }
 
     # store date in matrix as numeric, then convert back to date format with as.Date(date_col, origin ="1970-01-01")
