@@ -90,7 +90,7 @@ roll_on_dte <- function(contracts, roll_dte = 1, roll_cost = 0) {
     # aggregate returns by linking together consecutive contracts for each symbol
     dplyr::group_by(symbol) %>%
     dplyr::mutate(
-      cum_return = 1 + cumsum(log_return),
+      cum_return = exp(cumsum(log_return)),
       cum_simp_return = cumprod(1 + simple_return)
     ) %>%
     dplyr::select(symbol, ticker, date, dte, current_contract, was_current_contract, roll_cost, log_return, simple_return, cum_return, cum_simp_return)
@@ -165,7 +165,7 @@ roll_on_oi <- function(contracts, roll_cost = 0) {
     # aggregate returns by linking together consecutive contracts for each symbol
     dplyr::group_by(symbol) %>%
     dplyr::mutate(
-      cum_return = 1 + cumsum(log_return),
+      cum_return = exp(cumsum(log_return)),
       cum_simp_return = cumprod(1 + simple_return)
     ) %>%
     dplyr::select(symbol, ticker, date, dte, open_interest, lag_open_interest, current_contract, was_current_contract, roll_cost, log_return, simple_return, cum_return, cum_simp_return)
