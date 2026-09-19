@@ -29,9 +29,14 @@
 #' assumes constant interest rate of zero.
 #' A symmetric broker spread (see `broker_interest_spread`) is applied to both
 #' credit and debit cash balances.
-#' @param short_borrow_costs Named vector of annualised short borrow costs as percent. For
-#' example, c("TLT" = 0.0025) is equivalent to a short borrow cost of 0.25%pa for
-#' TLT. Defaults to zero.
+#' @param short_borrow_costs Annualised short borrow costs as a decimal fraction,
+#' so c("TLT" = 0.0025) is 0.25% a year. This is the borrow **fee**, the amount
+#' you pay; the rebate is not modelled separately, since short sale proceeds are
+#' held as collateral and earn nothing. Either a named vector, for a rate that is
+#' constant through time, or a matrix or data frame whose first column is a date
+#' and whose remaining columns are named for the tickers, for a rate that varies
+#' by day. A date-keyed input must cover exactly the simulated dates. Tickers not
+#' named get zero. Defaults to zero.
 #' @param trade_buffer Trade buffer parameter (see details)
 #' @param initial_cash Inital cash balance
 #' @param capitalise_profits If TRUE, utilise profits and initial cash balance in determining position sizes. If FALSE, profits accrue as a cash balance and are not reinvested.
@@ -151,20 +156,17 @@ fractional_min_commission_backtest <- function(prices, unadjusted_prices, target
       data = c(prices[, 1], rep(0, nrow(prices))),
       ncol = 2
     )
+  } else {
+    # Read by row position below, so its dates have to be the simulated dates.
+    interest_rates <- validate_rate_dates(interest_rates, prices, "interest_rates")
   }
 
   num_assets <- ncol(target_weights) - 1
   tickers <- colnames(target_weights)[-1]
 
-  if(is.null(short_borrow_costs)) {
-    short_borrow_costs <- rep(0, num_assets)
-    names(short_borrow_costs) <- tickers
-  } else if(! all(names(short_borrow_costs) %in% tickers)) {
-    stop("short_borrow_costs must be a named vector with names corresponding to tickers")
-  } else {
-    # ensure short_borrow_costs ordered same as prices, weights
-    short_borrow_costs <- short_borrow_costs[sort(names(short_borrow_costs))]
-  }
+  # Either a constant named vector or a date-keyed matrix, coerced to one
+  # per-day per-asset matrix in tickers order so the loop below is uniform.
+  short_borrow_costs <- build_borrow_matrix(short_borrow_costs, prices, tickers)
 
   rowlist <- vector(mode = "list", length = nrow(target_weights))  # preallocate list to store daily backtest data
 
@@ -191,7 +193,7 @@ fractional_min_commission_backtest <- function(prices, unadjusted_prices, target
       (current_interest_rate+broker_interest_spread)*interest_bearing_cash
     )
     # short borrow is debited based on holding yesterday's positions to today's close
-    short_borrow <- short_borrow_costs/365 * ifelse(share_pos >= 0, 0, share_pos*current_price)
+    short_borrow <- short_borrow_costs[i, ]/365 * ifelse(share_pos >= 0, 0, share_pos*current_price)
 
     # update cash and total equity
     Cash <- Cash + interest + sum(short_borrow, na.rm = TRUE)
