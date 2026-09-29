@@ -76,10 +76,28 @@
 #'  trade_value: Value of shares traded, including any positions that
 #'  were liquidated fully or partially.
 #'  commission: Commissions paid on today's trading, including any liquidated
-#'  positions.
+#'  positions. ALWAYS POSITIVE - it is the magnitude of a cost, and the
+#'  simulation subtracts it: `Cash <- Cash - sum(trade_value) - sum(commissions)`.
 #'  interest: Interest accrued on yesterday's cash balance and settled today.
+#'  SIGNED - positive when credited on a positive cash balance, negative when
+#'  debited on a borrowed one. Added to cash.
 #'  short_borrow: Borrow costs from holding yesterday's short positions through
-#'  today's close.
+#'  today's close. ALWAYS ZERO OR NEGATIVE, because it is computed from a
+#'  negative share position. Added to cash.
+#'
+#'  Note the asymmetry, because it catches people. `interest` and `short_borrow`
+#'  are signed adjustments to cash, where negative means money left. `commission`
+#'  is the only one expressed as a positive magnitude. Summing all three as
+#'  though they shared a convention gives an answer wrong by twice the
+#'  commission. Negate `commission` first if you want one comparable series:
+#'
+#'    costs <- results %>%
+#'      group_by(date) %>%
+#'      summarise(commission   = -sum(commission, na.rm = TRUE),
+#'                interest     =  sum(interest, na.rm = TRUE),
+#'                short_borrow =  sum(short_borrow, na.rm = TRUE))
+#'
+#'  after which all three are negative when they cost you money.
 #'  margin_call: Boolean indicating whether a margin call occurred today.
 #'  reduced_target_pos: Boolean indicating whether target positions could not be
 #'  executed due to insufficient margin, and were scaled back accordingly.
