@@ -89,6 +89,50 @@ test_that("Leveraged short equal weight blows up account", {
   ))
 })
 
+test_that("Data frame inputs work for multi-asset backtests", {
+  # Regression: data.frame inputs with more than one asset column crashed in the
+  # C++ trade logic with "Not compatible with requested type: [type=list;
+  # target=double]", because df[i, -1] row slices are lists. A single-asset
+  # data.frame happened to work because the slice drops to a vector.
+  dates <- seq(as.Date("2024-01-01"), by = "day", length.out = 6)
+  prices_df <- data.frame(
+    date = dates,
+    SPY = c(100, 100, 100, 110, 110, 110),
+    TLT = c(90, 90, 90, 95, 95, 95)
+  )
+  weights_df <- data.frame(
+    date = dates,
+    SPY = c(0, 0, 1, 1, 1, 0),
+    TLT = c(0, 0, 0, 0, 0, 0)
+  )
+
+  results_df <- min_commission_backtest(
+    prices = prices_df,
+    unadjusted_prices = prices_df,
+    target_weights = weights_df,
+    trade_buffer = 0.002,
+    initial_cash = 10000,
+    capitalise_profits = TRUE,
+    commission_fun = function(trades, price, unadj_price, pct) abs(trades * price) * pct,
+    pct = 2e-4
+  )
+
+  expect_s3_class(results_df, "data.frame")
+
+  # traded into the target at the 2024-01-03 close and out at the 2024-01-06 close
+  buy <- results_df[results_df$ticker == "SPY" & results_df$date == as.Date("2024-01-03"), ]
+  sell <- results_df[results_df$ticker == "SPY" & results_df$date == as.Date("2024-01-06"), ]
+  expect_equal(buy$share_trades, 100)
+  expect_equal(sell$share_trades, -100)
+
+  # the buffer absorbs whole-share drift on the hold rows: no churn mid-position
+  mid <- sum(abs(results_df$share_trades[results_df$date %in% as.Date(c("2024-01-04", "2024-01-05"))]))
+  expect_equal(mid, 0)
+
+  # TLT is never a target and never trades
+  expect_equal(sum(abs(results_df$share_trades[results_df$ticker == "TLT"])), 0)
+})
+
 test_that("Known results are correct", {
 
 
