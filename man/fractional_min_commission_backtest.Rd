@@ -101,6 +101,23 @@ shape, or have different values in Column 1 (the date or index column).
 A simple approach to ensuring inputs conform with this requirement is in the
 vignette.
 
+\strong{Input types and timestamps.} \code{prices}, \code{unadjusted_prices}, \code{target_weights},
+and \code{interest_rates} may be plain matrices or data frames - data frame inputs
+are indexed row-wise internally and behave identically. Timestamps in column 1
+are interpreted as days since 1970-01-01 (pass \code{as.numeric(<Date>)}) and are
+returned as \code{YYYY-MM-DD} dates.
+
+\strong{Missing weights.} \code{target_weights} must be supplied on every row you intend
+to hold through: rows with \code{NA} weights are treated as targeting zero, so an
+open position is traded toward zero on any row where the weight is missing.
+Zero-fill hold rows explicitly.
+
+\strong{Commission function signature.} \code{commission_fun} is called as
+\code{commission_fun(trades, prices, unadjusted_prices, ...)}, where each argument
+is a per-asset vector for the day. \code{us_tiered_commission} follows this
+convention; note that \code{fixed_percent} has a different, standalone signature
+and cannot be passed directly as \code{commission_fun}.
+
 It is up to the user to lag \code{target_weights} as necessary to ensure that
 trades occur at appropriate prices. Specifically, the function assumes that
 \code{target_weights} are date-aligned with \code{prices} such that the price at which

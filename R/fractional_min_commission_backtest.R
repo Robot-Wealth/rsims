@@ -111,6 +111,23 @@
 #' A simple approach to ensuring inputs conform with this requirement is in the
 #' vignette.
 #'
+#' **Input types and timestamps.** `prices`, `unadjusted_prices`, `target_weights`,
+#' and `interest_rates` may be plain matrices or data frames - data frame inputs
+#' are indexed row-wise internally and behave identically. Timestamps in column 1
+#' are interpreted as days since 1970-01-01 (pass `as.numeric(<Date>)`) and are
+#' returned as `YYYY-MM-DD` dates.
+#'
+#' **Missing weights.** `target_weights` must be supplied on every row you intend
+#' to hold through: rows with `NA` weights are treated as targeting zero, so an
+#' open position is traded toward zero on any row where the weight is missing.
+#' Zero-fill hold rows explicitly.
+#'
+#' **Commission function signature.** `commission_fun` is called as
+#' `commission_fun(trades, prices, unadjusted_prices, ...)`, where each argument
+#' is a per-asset vector for the day. `us_tiered_commission` follows this
+#' convention; note that `fixed_percent` has a different, standalone signature
+#' and cannot be passed directly as `commission_fun`.
+#'
 #' It is up to the user to lag `target_weights` as necessary to ensure that
 #' trades occur at appropriate prices. Specifically, the function assumes that
 #' `target_weights` are date-aligned with `prices` such that the price at which
@@ -154,6 +171,22 @@ fractional_min_commission_backtest <- function(prices, unadjusted_prices, target
 
   if(trade_buffer < 0)
     stop("trade_buffer must be greater than or equal to zero")
+
+  # Coerce inputs to numeric matrices up front. Data frame inputs would otherwise
+  # produce list row slices that the C++ trade logic can't convert
+  # ("type=list; target=double"), and a plain as.matrix() would string-ify a Date
+  # column 1, so the timestamp column is converted to days since 1970-01-01 here
+  # (which is how it is stored and returned anyway). Matrix inputs are unchanged.
+  coerce_numeric_matrix <- function(x) {
+    body <- as.matrix(x[, -1, drop = FALSE])
+    mode(body) <- "numeric"
+    out <- cbind(as.numeric(x[, 1]), body)
+    if (!is.null(colnames(x))) colnames(out) <- colnames(x)
+    out
+  }
+  prices <- coerce_numeric_matrix(prices)
+  unadjusted_prices <- coerce_numeric_matrix(unadjusted_prices)
+  target_weights <- coerce_numeric_matrix(target_weights)
 
   misaligned_timestamps <- which(prices[, 1] != target_weights[, 1])
   if(length(misaligned_timestamps) > 0)
@@ -211,7 +244,7 @@ fractional_min_commission_backtest <- function(prices, unadjusted_prices, target
       (current_interest_rate+broker_interest_spread)*interest_bearing_cash
     )
     # short borrow is debited based on holding yesterday's positions to today's close
-    short_borrow <- short_borrow_costs[i, ]/365 * ifelse(share_pos >= 0, 0, share_pos*current_price)
+    short_borrow <- short_borrow_costs[i, , drop = TRUE]/365 * ifelse(share_pos >= 0, 0, share_pos*current_price)
 
     # update cash and total equity
     Cash <- Cash + interest + sum(short_borrow, na.rm = TRUE)
